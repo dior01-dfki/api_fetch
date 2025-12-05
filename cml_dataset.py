@@ -5,23 +5,34 @@ import os
 import pandas as pd
 import argparse
 
+# Try to load .env file if available (for local development)
+# In remote execution, tokens will be passed as environment variables
+try:
+    load_dotenv(find_dotenv())
+except:
+    print("No .env file found, using environment variables directly")
 
-
-load_dotenv(find_dotenv())
-
-
-# Define argparse BEFORE execute_remotely
-
-
-# Send execution to the agent (after args are defined)
-
-
+# Get tokens from environment variables (works both locally and remotely)
 buildings_token = os.getenv("BUILDINGS")
 hca_token = os.getenv("HEAT_COST_ALLOCATORS")
 rooms_token = os.getenv("ROOMS")
 units_token = os.getenv("UNITS")
 hca_details_token = os.getenv("HEAT_COST_ALLOCATOR_DETAILS")
 room_details_token = os.getenv("ROOM_DETAILS")
+
+# Verify that all required tokens are available
+required_tokens = {
+    "BUILDINGS": buildings_token,
+    "HEAT_COST_ALLOCATORS": hca_token,
+    "ROOMS": rooms_token,
+    "UNITS": units_token,
+    "HEAT_COST_ALLOCATOR_DETAILS": hca_details_token,
+    "ROOM_DETAILS": room_details_token
+}
+
+missing_tokens = [name for name, value in required_tokens.items() if not value]
+if missing_tokens:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_tokens)}")
 
 dataset_project: str = "ForeSightNEXT/BaltBest"
 dataset_name: str = "BaltBestMetadata"
