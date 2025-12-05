@@ -1,0 +1,43 @@
+{
+    "dataset_file_entries": [
+        {
+            "artifact_name": "data",
+            "hash": "fd268a42515a8e9dbd42cd6cd29a9484a00be10a436a01e343b5ee7ad80133cf",
+            "parent_dataset_id": "010471ad8cfa4ab2b323e9c8f4d2211b",
+            "relative_path": "units_metadata.csv",
+            "size": 10525
+        },
+        {
+            "artifact_name": "data",
+            "hash": "ead3129a1174280d1f2473f3554cb49ccb5dff291601a9196b873ba3c300a550",
+            "parent_dataset_id": "010471ad8cfa4ab2b323e9c8f4d2211b",
+            "relative_path": "hca_metadata.csv",
+            "size": 184244
+        },
+        {
+            "artifact_name": "data",
+            "hash": "bdcb78bfc1103b145b1ead8ecf84d8c0f3fef581eff4bc1aa9a22fb81e9f963d",
+            "parent_dataset_id": "010471ad8cfa4ab2b323e9c8f4d2211b",
+            "relative_path": "building_metadata.csv",
+            "size": 3507
+        },
+        {
+            "artifact_name": "data",
+            "hash": "28f9e9dd08f2b16e2f6626a62fb87a56f37cafbb216934ac3b667f7485bc27c6",
+            "parent_dataset_id": "010471ad8cfa4ab2b323e9c8f4d2211b",
+            "relative_path": "rooms_metadata.csv",
+            "size": 26007
+        }
+    ],
+    "dataset_link_entries": [],
+    "dependency_chunk_lookup": {
+        "010471ad8cfa4ab2b323e9c8f4d2211b": 1
+    },
+    "dependency_graph": {
+        "010471ad8cfa4ab2b323e9c8f4d2211b": []
+    },
+    "dirty": false,
+    "file_count": 4,
+    "id": "010471ad8cfa4ab2b323e9c8f4d2211b",
+    "total_size": 224283
+}
