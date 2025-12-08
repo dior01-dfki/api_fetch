@@ -5,7 +5,13 @@ import os
 import pandas as pd
 import argparse
 
+# Initialize ClearML Task
+task = Task.init(
+    project_name="ForeSightNEXT/BaltBest",
+    task_name="Fetch Building Data"
+)
 
+# Load environment variables (works locally with .env file)
 load_dotenv(find_dotenv())
 buildings_token = os.getenv("buildings_token")
 hca_token = os.getenv("hca_token")
@@ -14,6 +20,8 @@ units_token = os.getenv("units_token")
 hca_details_token = os.getenv("hca_details_token")
 room_details_token = os.getenv("room_details_token")
 
+hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
+room_meta_data = pd.read_csv("metadata/rooms_metadata.csv")
 
 dataset_project: str = "ForeSightNEXT/BaltBest"
 dataset_name: str = "BaltBestMetadata"
@@ -21,26 +29,21 @@ baseurl = "https://edc.e-b-z.de/public"
 
 
 def create_meta_dataset():
-
     dataset = Dataset.create(
         dataset_project=dataset_project,
         dataset_name=dataset_name,
         dataset_tags=["test"],
         dataset_version="0.0.1",
     )
-
-    dataset.add_files('metadata/')  # Adds files from a local folder to the dataset
-    dataset.upload()      # Uploads the data to the ClearML server/storage
-
-
-    dataset.finalize()    # Locks and versions the dataset
+    dataset.add_files('metadata/')
+    dataset.upload()
+    dataset.finalize()
 
 def create_building_dataset(building_id):
     parent_dataset = Dataset.get(
         dataset_project=dataset_project,
         dataset_name=dataset_name,
         dataset_version="0.0.1",
-        #dataset_id="010471ad8cfa4ab2b323e9c8f4d2211b"
     )
     dataset = Dataset.create(
         dataset_project=dataset_project,
@@ -53,7 +56,7 @@ def create_building_dataset(building_id):
     dataset.add_files("allocator_ts.csv")
     dataset.add_files("units_ts.csv")
     dataset.upload()
-    dataset.finalize()    # Locks and versions the dataset
+    dataset.finalize()
 
 def fetch_room_temps(room_id:int, room_details_token:str):
     all_data = []
@@ -71,7 +74,6 @@ def fetch_room_temps(room_id:int, room_details_token:str):
             all_data.extend(resp_data['data'])
             if page > 5 or resp_data['data'] == []:
                 break
-            
         else:
             print(f"Error fetching data for room {room_id}: {resp.status_code} - {resp.text}")
             break
@@ -80,8 +82,7 @@ def fetch_room_temps(room_id:int, room_details_token:str):
 
 def fetch_building_rooms(building_id:int, room_details_token:str):
     print(f"room token: {room_details_token}")
-    room_meta_data = pd.read_csv("metadata/rooms_metadata.csv")
-    #unique_buildings = room_meta_data['building_id'].unique()
+    
     building_rooms = room_meta_data[room_meta_data['building_id'] == building_id]
     unique_rooms = building_rooms['room_id'].unique()
     room_df_list = []
@@ -95,7 +96,7 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
         hca_data, units_data = fetch_room_hcas(room, hca_details_token)
         hca_df_list.append(hca_data)
         units_df_list.append(units_data)
-        #convert_to_csv(data, f"building_{building_id}_room_{room}_temps.csv")
+    
     building__room_df = pd.concat(room_df_list, ignore_index=True)
     building__room_df.to_csv(f"room_temp_ts.csv", index=False)
 
@@ -104,14 +105,12 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
 
     units__hca_df = pd.concat(units_df_list, ignore_index=True)
     units__hca_df.to_csv(f"units_ts.csv",index=False)
-    #return building__room_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
     print(f"HCA Details Token: {hca_details_token}")
-    hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
+    
     room_hcas = hca_metadata[(hca_metadata['room_id'] == room_id)]
     unique_hcas = room_hcas['heat_cost_allocator_id'].unique()
-    #print(unique_hcas)
     df_list = []
     df_list_units = []
     for hca in unique_hcas:
@@ -126,13 +125,11 @@ def fetch_room_hcas(room_id:int, hca_details_token:str):
     try:
         room_hca_df = pd.concat(df_list, ignore_index=True)
     except ValueError:
-        room_hca_df = pd.DataFrame()  # Return an empty DataFrame if df_list is empty
+        room_hca_df = pd.DataFrame()
     try:
         units_df = pd.concat(df_list_units, ignore_index=True)
     except ValueError:
         units_df = pd.DataFrame()
-    #print(room_hca_df)
-    #room_hca_df.to_csv(f"hca_temp_test.csv", index=False)
     return room_hca_df, units_df
 
 def fetch_hca_temps(hca_id:int, hca_details_token:str):
@@ -149,12 +146,10 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         page += 1
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
-            #print(resp_data)
             all_data.extend(resp_data)
             if resp_data == [] or page > 5:
                 print(f"Fetched data for HCA {hca_id}: {resp_data}")
                 break
-            
         else:
             print(f"Error fetching data for HCA {hca_id}: {resp.status_code} - {resp.text}")
             break
@@ -184,16 +179,15 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--building_id", type=int, default=57, help="Building ID to fetch")
-
-
+    #parser.add_argument("--remote", action="store_true", help="Execute remotely on ClearML agent")
+    
     args = parser.parse_args()
+    
+    # If remote flag is set, configure and execute remotely
+    #if args.remote:
+    task.set_base_docker("dior00002/heating-forecast2:v1")
+    task.execute_remotely(queue_name="default")
+    
     print(f"Fetching building: {args.building_id}")
     fetch_building_rooms(args.building_id, room_details_token)
-    #create_building_dataset(args.building_id)   
-
-    # create_meta_dataset()
-    #create_building_dataset()
-    #data = fetch_room_temps(1000, room_details_token)
-    #print(data)
-    #convert_to_csv(data, "rooooom_test.csv")
-
+    create_building_dataset(args.building_id)
