@@ -21,7 +21,14 @@ def main(building_id:int):
     docker_env_args = (
         f"-e CLEARML_AGENT_GIT_USER=oauth2 "
         f"-e CLEARML_AGENT_GIT_PASS={git_token} "
-        f"--env-file {env_file_path} "
+        f"--env buildings_token={buildings_token} "
+        f"--env hca_token={hca_token} "
+        f"--env rooms_token={rooms_token} "
+        f"--env units_token={units_token} "
+        f"--env hca_details_token={hca_details_token} "
+        f"--env room_details_token={room_details_token} "
+        #f"-v {env_file_path}:/app/.env "
+        #f"--env-file {env_file_path} "
     )
     #print(docker_env_args)
     task = Task.create(
