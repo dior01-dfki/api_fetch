@@ -7,12 +7,12 @@ import argparse
 
 
 load_dotenv(find_dotenv())
-buildings_token = os.getenv("BUILDINGS")
-hca_token = os.getenv("HEAT_COST_ALLOCATORS")
-rooms_token = os.getenv("ROOMS")
-units_token = os.getenv("UNITS")
-hca_details_token = os.getenv("HEAT_COST_ALLOCATOR_DETAILS")
-room_details_token = os.getenv("ROOM_DETAILS")
+buildings_token = os.getenv("buildings_token")
+hca_token = os.getenv("hca_token")
+rooms_token = os.getenv("rooms_token")
+units_token = os.getenv("units_token")
+hca_details_token = os.getenv("hca_details_token")
+room_details_token = os.getenv("room_details_token")
 
 
 dataset_project: str = "ForeSightNEXT/BaltBest"

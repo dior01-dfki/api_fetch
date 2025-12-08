@@ -9,12 +9,12 @@ load_dotenv(find_dotenv())
 def main(building_id:int):
     # Load all required tokens from environment
     git_token = os.environ['GIT_OAUTH_TOKEN']
-    buildings_token = os.getenv("BUILDINGS")
-    hca_token = os.getenv("HEAT_COST_ALLOCATORS")
-    rooms_token = os.getenv("ROOMS")
-    units_token = os.getenv("UNITS")
-    hca_details_token = os.getenv("HEAT_COST_ALLOCATOR_DETAILS")
-    room_details_token = os.getenv("ROOM_DETAILS")
+    buildings_token = os.getenv("buildings_token")
+    hca_token = os.getenv("hca_token")
+    rooms_token = os.getenv("rooms_token")
+    units_token = os.getenv("units_token")
+    hca_details_token = os.getenv("hca_details_token")
+    room_details_token = os.getenv("room_details_token")
     
     env_file_path = os.path.abspath(".env")
     
@@ -27,6 +27,8 @@ def main(building_id:int):
         f"--env units_token={units_token} "
         f"--env hca_details_token={hca_details_token} "
         f"--env room_details_token={room_details_token} "
+        "-v ~/.ssh:/root/.ssh:ro "
+        "-e GIT_SSH_COMMAND='ssh -F /root/.ssh/config -o StrictHostKeyChecking=no'"
         #f"-v {env_file_path}:/app/.env "
         #f"--env-file {env_file_path} "
     )
