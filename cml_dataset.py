@@ -79,6 +79,7 @@ def fetch_room_temps(room_id:int, room_details_token:str):
  
 
 def fetch_building_rooms(building_id:int, room_details_token:str):
+    print(f"room token: {room_details_token}")
     room_meta_data = pd.read_csv("metadata/rooms_metadata.csv")
     #unique_buildings = room_meta_data['building_id'].unique()
     building_rooms = room_meta_data[room_meta_data['building_id'] == building_id]
@@ -106,6 +107,7 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
     #return building__room_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
+    print(f"HCA Details Token: {hca_details_token}")
     hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
     room_hcas = hca_metadata[(hca_metadata['room_id'] == room_id)]
     unique_hcas = room_hcas['heat_cost_allocator_id'].unique()
@@ -134,6 +136,7 @@ def fetch_room_hcas(room_id:int, hca_details_token:str):
     return room_hca_df, units_df
 
 def fetch_hca_temps(hca_id:int, hca_details_token:str):
+    print(f"HCA Details Token: {hca_details_token}")
     all_data = []
     page = 1
     while True:
@@ -158,6 +161,7 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
     return all_data
 
 def fetch_hca_units(hca_id:int, hca_details_token:str):
+    print(f"HCA Details Token: {hca_details_token}")
     all_data = []
     page = 1 
     while True:
