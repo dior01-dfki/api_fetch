@@ -5,14 +5,8 @@ import os
 import pandas as pd
 import argparse
 
-# Try to load .env file if available (for local development)
-# In remote execution, tokens will be passed as environment variables
-try:
-    load_dotenv(find_dotenv())
-except:
-    print("No .env file found, using environment variables directly")
 
-# Get tokens from environment variables (works both locally and remotely)
+load_dotenv(find_dotenv())
 buildings_token = os.getenv("BUILDINGS")
 hca_token = os.getenv("HEAT_COST_ALLOCATORS")
 rooms_token = os.getenv("ROOMS")
@@ -20,19 +14,6 @@ units_token = os.getenv("UNITS")
 hca_details_token = os.getenv("HEAT_COST_ALLOCATOR_DETAILS")
 room_details_token = os.getenv("ROOM_DETAILS")
 
-# Verify that all required tokens are available
-required_tokens = {
-    "BUILDINGS": buildings_token,
-    "HEAT_COST_ALLOCATORS": hca_token,
-    "ROOMS": rooms_token,
-    "UNITS": units_token,
-    "HEAT_COST_ALLOCATOR_DETAILS": hca_details_token,
-    "ROOM_DETAILS": room_details_token
-}
-
-missing_tokens = [name for name, value in required_tokens.items() if not value]
-if missing_tokens:
-    raise ValueError(f"Missing required environment variables: {', '.join(missing_tokens)}")
 
 dataset_project: str = "ForeSightNEXT/BaltBest"
 dataset_name: str = "BaltBestMetadata"
@@ -68,8 +49,9 @@ def create_building_dataset(building_id):
         dataset_version="0.0.1",
         parent_datasets=[parent_dataset],
     )
-    dataset.add_files("hca_temp_test.csv")
-    dataset.add_files("room_temp_test.csv")
+    dataset.add_files("room_temp_ts.csv")
+    dataset.add_files("allocator_ts.csv")
+    dataset.add_files("units_ts.csv")
     dataset.upload()
     dataset.finalize()    # Locks and versions the dataset
 
@@ -81,24 +63,20 @@ def fetch_room_temps(room_id:int, room_details_token:str):
         resp = requests.get(
             f"{baseurl}/{room_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": room_details_token},
-            params={'per_page': 1000, 'page': page}
+            params={'per_page': 5000, 'page': page}
         )
         page += 1
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             all_data.extend(resp_data['data'])
-            if page > resp_data['num_pages'] or resp_data['data'] == []:
+            if page > 5 or resp_data['data'] == []:
                 break
             
         else:
             print(f"Error fetching data for room {room_id}: {resp.status_code} - {resp.text}")
             break
     return all_data
-
-# def convert_to_csv(data, filename:str):
-#     import pandas as pd
-#     df = pd.json_normalize(data)
-#     df.to_csv(filename, index=False)    
+ 
 
 def fetch_building_rooms(building_id:int, room_details_token:str):
     room_meta_data = pd.read_csv("metadata/rooms_metadata.csv")
@@ -118,18 +96,18 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
         units_df_list.append(units_data)
         #convert_to_csv(data, f"building_{building_id}_room_{room}_temps.csv")
     building__room_df = pd.concat(room_df_list, ignore_index=True)
-    building__room_df.to_csv(f"room_temp_test.csv", index=False)
+    building__room_df.to_csv(f"room_temp_ts.csv", index=False)
 
     building__hca_df =  pd.concat(hca_df_list, ignore_index=True)
-    building__hca_df.to_csv(f"hca_temp_test.csv", index=False)
+    building__hca_df.to_csv(f"allocator_ts.csv", index=False)
 
     units__hca_df = pd.concat(units_df_list, ignore_index=True)
-    units__hca_df.to_csv(f"units_temp_test.csv",index=False)
+    units__hca_df.to_csv(f"units_ts.csv",index=False)
     #return building__room_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
     hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
-    room_hcas = hca_metadata[(hca_metadata['room_id'] == room_id) & (hca_metadata['active']==True)]
+    room_hcas = hca_metadata[(hca_metadata['room_id'] == room_id)]
     unique_hcas = room_hcas['heat_cost_allocator_id'].unique()
     #print(unique_hcas)
     df_list = []
@@ -163,14 +141,15 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         resp = requests.get(
             f"{baseurl}/{hca_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-            params={'per_page': 1000, "page": page}
+            params={'per_page': 5000, "page": page}
         )
         page += 1
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             #print(resp_data)
             all_data.extend(resp_data)
-            if resp_data == []:
+            if resp_data == [] or page > 5:
+                print(f"Fetched data for HCA {hca_id}: {resp_data}")
                 break
             
         else:
@@ -190,7 +169,8 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             all_data.extend(resp_data)
-            if resp_data == []:
+            if resp_data == [] or page > 5:
+                print(f"Fetched units for HCA {hca_id}: {resp_data}")
                 break 
         else:
             print(f"Error fetch in unit data for HCA {hca_id}: {resp.status_code} - {resp.text}")
@@ -204,9 +184,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(f"Fetching building: {args.building_id}")
-    #task.execute_remotely()
     fetch_building_rooms(args.building_id, room_details_token)
-    create_building_dataset(args.building_id)   
+    #create_building_dataset(args.building_id)   
 
     # create_meta_dataset()
     #create_building_dataset()

@@ -7,17 +7,33 @@ load_dotenv(find_dotenv())
 
 
 def main(building_id:int):
-    token = os.environ['GIT_OAUTH_TOKEN']
+    # Load all required tokens from environment
+    git_token = os.environ['GIT_OAUTH_TOKEN']
+    buildings_token = os.getenv("BUILDINGS")
+    hca_token = os.getenv("HEAT_COST_ALLOCATORS")
+    rooms_token = os.getenv("ROOMS")
+    units_token = os.getenv("UNITS")
+    hca_details_token = os.getenv("HEAT_COST_ALLOCATOR_DETAILS")
+    room_details_token = os.getenv("ROOM_DETAILS")
+    
+    env_file_path = os.path.abspath(".env")
+    
+    docker_env_args = (
+        f"-e CLEARML_AGENT_GIT_USER=oauth2 "
+        f"-e CLEARML_AGENT_GIT_PASS={git_token} "
+        f"--env-file {env_file_path} "
+    )
+    #print(docker_env_args)
     task = Task.create(
         project_name="ForeSightNEXT/BaltBest",
         task_name="Fetch Building Data Remotely",
         script = "./cml_dataset.py",
-        argparse_args=[("bulding_id", building_id)],
+        argparse_args=[("--building_id", building_id)],
         docker="dior00002/heating-forecast2:v1",
-                docker_args=(
-            f"-e CLEARML_AGENT_GIT_USER=oauth2 -e CLEARML_AGENT_GIT_PASS={token}"
-        )
+        docker_args=docker_env_args
     )
+
+
     Task.enqueue(task=task, queue_name="default")
 
 if __name__ == "__main__":
