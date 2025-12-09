@@ -189,9 +189,9 @@ if __name__ == "__main__":
     # #if args.remote:
 
     
-    # task.execute_remotely(
-    # queue_name="default"
-    # )
+    task.execute_remotely(
+    queue_name="default"
+    )
 
 
     
