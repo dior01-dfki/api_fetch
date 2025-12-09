@@ -181,20 +181,20 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--building_id", type=int, default=57, help="Building ID to fetch")
-    #parser.add_argument("--remote", action="store_true", help="Execute remotely on ClearML agent")
+    # #parser.add_argument("--remote", action="store_true", help="Execute remotely on ClearML agent")
     
     args = parser.parse_args()
     
-    # If remote flag is set, configure and execute remotely
-    #if args.remote:
+    # # If remote flag is set, configure and execute remotely
+    # #if args.remote:
 
     
-    task.execute_remotely(
-    queue_name="default"
-    )
+    # task.execute_remotely(
+    # queue_name="default"
+    # )
 
 
     
-    print(f"Fetching building: {args.building_id}")
+    # print(f"Fetching building: {args.building_id}")
     fetch_building_rooms(args.building_id, room_details_token)
     create_building_dataset(args.building_id)
