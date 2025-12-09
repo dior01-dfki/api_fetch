@@ -68,7 +68,7 @@ def fetch_room_temps(room_id:int, room_details_token:str):
         resp = requests.get(
             f"{baseurl}/{room_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": room_details_token},
-            params={'per_page': 5000, 'page': page}
+            params={'per_page': 1000, 'page': page}
         )
         page += 1
         if 200 <= resp.status_code < 300:
@@ -143,7 +143,7 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         resp = requests.get(
             f"{baseurl}/{hca_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-            params={'per_page': 5000, "page": page}
+            params={'per_page': 1000, "page": page}
         )
         page += 1
         if 200 <= resp.status_code < 300:
