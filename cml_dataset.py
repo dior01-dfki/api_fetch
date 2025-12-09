@@ -6,10 +6,10 @@ import pandas as pd
 import argparse
 
 # Initialize ClearML Task
-# task = Task.init(
-#     project_name="ForeSightNEXT/BaltBest",
-#     task_name="Fetch Building Data"
-# )
+task = Task.init(
+    project_name="ForeSightNEXT/BaltBest",
+    task_name="Fetch Building Data"
+)
 
 # Load environment variables (works locally with .env file)
 load_dotenv(find_dotenv())
