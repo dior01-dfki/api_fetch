@@ -14,9 +14,7 @@ import pprint
 
 # Load environment variables (works locally with .env file)
 #load_dotenv(find_dotenv())
-print("--- Environment Variables ---")
-pprint.pprint(dict(os.environ))
-print("-----------------------------")
+
 
 # Your token reading code (which you confirmed is correct)
 buildings_token = os.getenv("buildings_token")
