@@ -6,10 +6,10 @@ import pandas as pd
 import argparse
 
 # Initialize ClearML Task
-task = Task.init(
-    project_name="ForeSightNEXT/BaltBest",
-    task_name="Fetch Building Data"
-)
+# task = Task.init(
+#     project_name="ForeSightNEXT/BaltBest",
+#     task_name="Fetch Building Data"
+# )
 
 # Load environment variables (works locally with .env file)
 load_dotenv(find_dotenv())
@@ -147,10 +147,11 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         )
         page += 1
         if 200 <= resp.status_code < 300:
+            
             resp_data = resp.json()
+            
             all_data.extend(resp_data)
             if resp_data == []:
-                
                 break
         else:
             print(f"Error fetching data for HCA {hca_id}: {resp.status_code} - {resp.text}")
@@ -158,25 +159,16 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
     return all_data
 
 def fetch_hca_units(hca_id:int, hca_details_token:str):
-    
-    all_data = []
-    page = 1 
-    while True:
-        resp = requests.get(
-            f"{baseurl}/{hca_id}/units",
-            headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-        )
-        page += 1
-        if 200 <= resp.status_code < 300:
-            resp_data = resp.json()
-            all_data.extend(resp_data)
-            if resp_data == []:
-                
-                break 
-        else:
-            print(f"Error fetch in unit data for HCA {hca_id}: {resp.status_code} - {resp.text}")
-            break 
-    return all_data
+    resp = requests.get(
+        f"{baseurl}/{hca_id}/units",
+        headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
+    )
+    if 200 <= resp.status_code < 300:
+        return resp.json()
+    else:
+        print(f"Error fetch in unit data for HCA {hca_id}: {resp.status_code} - {resp.text}")
+        return []
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -195,6 +187,7 @@ if __name__ == "__main__":
 
 
     
+
     # print(f"Fetching building: {args.building_id}")
     fetch_building_rooms(args.building_id, room_details_token)
     create_building_dataset(args.building_id)
