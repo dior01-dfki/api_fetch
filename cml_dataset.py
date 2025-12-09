@@ -6,10 +6,10 @@ import pandas as pd
 import argparse
 
 # Initialize ClearML Task
-task = Task.init(
-    project_name="ForeSightNEXT/BaltBest",
-    task_name="Fetch Building Data"
-)
+# task = Task.init(
+#     project_name="ForeSightNEXT/BaltBest",
+#     task_name="Fetch Building Data"
+# )
 
 # Load environment variables (works locally with .env file)
 load_dotenv(find_dotenv())
@@ -197,9 +197,9 @@ if __name__ == "__main__":
     # #if args.remote:
 
     
-    task.execute_remotely(
-    queue_name="default"
-    )
+    # task.execute_remotely(
+    # queue_name="default"
+    # )
 
 
     
