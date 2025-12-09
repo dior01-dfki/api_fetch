@@ -6,10 +6,10 @@ import pandas as pd
 import argparse
 
 # Initialize ClearML Task
-task = Task.init(
-    project_name="ForeSightNEXT/BaltBest",
-    task_name="Fetch Building Data"
-)
+# task = Task.init(
+#     project_name="ForeSightNEXT/BaltBest",
+#     task_name="Fetch Building Data"
+# )
 
 # Load environment variables (works locally with .env file)
 load_dotenv(find_dotenv())
@@ -60,26 +60,43 @@ def create_building_dataset(building_id):
     dataset.upload()
     dataset.finalize()
 
-def fetch_room_temps(room_id:int, room_details_token:str):
+def fetch_room_temps(room_id: int, room_details_token: str):
     all_data = []
     page = 1
+
     while True:
         print(f"Fetching room {room_id}, page {page}")
+
         resp = requests.get(
             f"{baseurl}/{room_id}/temperatures",
-            headers={'Content-Type': 'application/json',"Authorization": room_details_token},
+            headers={'Content-Type': 'application/json',
+                     "Authorization": room_details_token},
             params={'per_page': 1000, 'page': page}
         )
-        page += 1
-        if 200 <= resp.status_code < 300:
-            resp_data = resp.json()
-            all_data.extend(resp_data['data'])
-            if page > resp_data['num_pages'] or resp_data['data'] == []:
-                break
-        else:
+
+        if not (200 <= resp.status_code < 300):
             print(f"Error fetching data for room {room_id}: {resp.status_code} - {resp.text}")
             break
+
+        resp_json = resp.json()
+        data = resp_json.get("data", [])
+        num_pages = resp_json.get("num_pages", 1)
+        curr_page = resp_json.get("page", page)
+
+        all_data.extend(data)
+        print(data)
+        print(curr_page, num_pages)
+        # Stop when server says “this is the last page”
+        if curr_page >= num_pages:
+            break
+
+        if not data:  # defensive break
+            break
+
+        page += 1
+
     return all_data
+
  
 
 def fetch_building_rooms(building_id:int, room_details_token:str):
@@ -181,13 +198,15 @@ if __name__ == "__main__":
     # #if args.remote:
 
     
-    task.execute_remotely(
-    queue_name="default"
-    )
+    # task.execute_remotely(
+    # queue_name="default"
+    # )
 
 
     
 
-    # print(f"Fetching building: {args.building_id}")
-    fetch_building_rooms(args.building_id, room_details_token)
-    create_building_dataset(args.building_id)
+    # # print(f"Fetching building: {args.building_id}")
+    # fetch_building_rooms(args.building_id, room_details_token)
+    # create_building_dataset(args.building_id)
+
+    fetch_room_temps(939,room_details_token)
