@@ -28,6 +28,12 @@ dataset_name: str = "BaltBestMetadata"
 baseurl = "https://edc.e-b-z.de/public"
 
 
+print(f"Using Room Details Token: {room_details_token}")
+print(f"Using HCA Details Token: {hca_details_token}")
+print(f"Using Rooms Token: {rooms_token}")
+print(f"Using HCA Token: {hca_token}")
+print(f"Using Buildings Token: {buildings_token}")
+
 def create_meta_dataset():
     dataset = Dataset.create(
         dataset_project=dataset_project,
@@ -185,8 +191,13 @@ if __name__ == "__main__":
     
     # If remote flag is set, configure and execute remotely
     #if args.remote:
+    git_token = os.environ['GIT_OAUTH_TOKEN']
     task.set_base_docker("dior00002/heating-forecast2:v1")
-    task.execute_remotely(queue_name="default")
+    task.execute_remotely(
+    queue_name="default"
+    )
+
+
     
     print(f"Fetching building: {args.building_id}")
     fetch_building_rooms(args.building_id, room_details_token)
