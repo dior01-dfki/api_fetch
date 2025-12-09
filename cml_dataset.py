@@ -28,11 +28,7 @@ dataset_name: str = "BaltBestMetadata"
 baseurl = "https://edc.e-b-z.de/public"
 
 
-print(f"Using Room Details Token: {room_details_token}")
-print(f"Using HCA Details Token: {hca_details_token}")
-print(f"Using Rooms Token: {rooms_token}")
-print(f"Using HCA Token: {hca_token}")
-print(f"Using Buildings Token: {buildings_token}")
+
 
 def create_meta_dataset():
     dataset = Dataset.create(
@@ -87,7 +83,7 @@ def fetch_room_temps(room_id:int, room_details_token:str):
  
 
 def fetch_building_rooms(building_id:int, room_details_token:str):
-    print(f"room token: {room_details_token}")
+    
     
     building_rooms = room_meta_data[room_meta_data['building_id'] == building_id]
     unique_rooms = building_rooms['room_id'].unique()
@@ -113,7 +109,7 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
     units__hca_df.to_csv(f"units_ts.csv",index=False)
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
-    print(f"HCA Details Token: {hca_details_token}")
+    
     
     room_hcas = hca_metadata[(hca_metadata['room_id'] == room_id)]
     unique_hcas = room_hcas['heat_cost_allocator_id'].unique()
@@ -139,7 +135,7 @@ def fetch_room_hcas(room_id:int, hca_details_token:str):
     return room_hca_df, units_df
 
 def fetch_hca_temps(hca_id:int, hca_details_token:str):
-    print(f"HCA Details Token: {hca_details_token}")
+    
     all_data = []
     page = 1
     while True:
@@ -162,7 +158,7 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
     return all_data
 
 def fetch_hca_units(hca_id:int, hca_details_token:str):
-    print(f"HCA Details Token: {hca_details_token}")
+    
     all_data = []
     page = 1 
     while True:
