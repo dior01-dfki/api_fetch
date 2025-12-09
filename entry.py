@@ -9,27 +9,10 @@ load_dotenv(find_dotenv())
 def main(building_id:int):
     # Load all required tokens from environment
     git_token = os.environ['GIT_OAUTH_TOKEN']
-    buildings_token = os.getenv("buildings_token")
-    hca_token = os.getenv("hca_token")
-    rooms_token = os.getenv("rooms_token")
-    units_token = os.getenv("units_token")
-    hca_details_token = os.getenv("hca_details_token")
-    room_details_token = os.getenv("room_details_token")
-    
-    env_file_path = os.path.abspath(".env")
     
     docker_env_args = (
         f"-e CLEARML_AGENT_GIT_USER=oauth2 "
         f"-e CLEARML_AGENT_GIT_PASS={git_token} "
-        f"-e buildings_token={buildings_token} "
-        f"-e hca_token={hca_token} "
-        f"-e rooms_token={rooms_token} "
-        f"-e units_token={units_token} "
-        f"-e hca_details_token={hca_details_token} "
-        f"-e room_details_token={room_details_token} "
-        "-v ~/.ssh:/root/.ssh:ro "
-        "-e GIT_SSH_COMMAND='ssh -F /root/.ssh/config -o StrictHostKeyChecking=no'"
-        #f"-v {env_file_path}:/app/.env "
         #f"--env-file {env_file_path} "
     )
     #print(docker_env_args)
