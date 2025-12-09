@@ -12,7 +12,7 @@ import argparse
 # )
 
 # Load environment variables (works locally with .env file)
-load_dotenv(find_dotenv())
+#load_dotenv(find_dotenv())
 buildings_token = os.getenv("buildings_token")
 hca_token = os.getenv("hca_token")
 rooms_token = os.getenv("rooms_token")
