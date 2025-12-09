@@ -84,8 +84,7 @@ def fetch_room_temps(room_id: int, room_details_token: str):
         curr_page = resp_json.get("page", page)
 
         all_data.extend(data)
-        print(data)
-        print(curr_page, num_pages)
+
         # Stop when server says “this is the last page”
         if curr_page >= num_pages:
             break
