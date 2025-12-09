@@ -74,7 +74,7 @@ def fetch_room_temps(room_id:int, room_details_token:str):
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             all_data.extend(resp_data['data'])
-            if page > 5 or resp_data['data'] == []:
+            if page > resp_data['num_pages'] or resp_data['data'] == []:
                 break
         else:
             print(f"Error fetching data for room {room_id}: {resp.status_code} - {resp.text}")
@@ -149,8 +149,8 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             all_data.extend(resp_data)
-            if resp_data == [] or page > 5:
-                print(f"Fetched data for HCA {hca_id}: {resp_data}")
+            if resp_data == []:
+                
                 break
         else:
             print(f"Error fetching data for HCA {hca_id}: {resp.status_code} - {resp.text}")
@@ -170,8 +170,8 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
         if 200 <= resp.status_code < 300:
             resp_data = resp.json()
             all_data.extend(resp_data)
-            if resp_data == [] or page > 5:
-                print(f"Fetched units for HCA {hca_id}: {resp_data}")
+            if resp_data == []:
+                
                 break 
         else:
             print(f"Error fetch in unit data for HCA {hca_id}: {resp.status_code} - {resp.text}")
