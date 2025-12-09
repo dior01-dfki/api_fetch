@@ -4,6 +4,7 @@ from dotenv import load_dotenv, find_dotenv
 import os 
 import pandas as pd
 import argparse
+import pprint
 
 # Initialize ClearML Task
 # task = Task.init(
@@ -13,6 +14,17 @@ import argparse
 
 # Load environment variables (works locally with .env file)
 #load_dotenv(find_dotenv())
+print("--- Environment Variables ---")
+pprint.pprint(dict(os.environ))
+print("-----------------------------")
+
+# Your token reading code (which you confirmed is correct)
+buildings_token = os.getenv("buildings_token")
+
+# Add a check to confirm the token was read
+if buildings_token is None:
+    print("FATAL: buildings_token was not found in the environment!")
+
 buildings_token = os.getenv("buildings_token")
 hca_token = os.getenv("hca_token")
 rooms_token = os.getenv("rooms_token")
