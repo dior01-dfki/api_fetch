@@ -187,8 +187,8 @@ if __name__ == "__main__":
     
     # If remote flag is set, configure and execute remotely
     #if args.remote:
-    git_token = os.environ['GIT_OAUTH_TOKEN']
-    task.set_base_docker("dior00002/heating-forecast2:v1")
+
+    
     task.execute_remotely(
     queue_name="default"
     )
