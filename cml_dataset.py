@@ -198,15 +198,15 @@ if __name__ == "__main__":
     # #if args.remote:
 
     
-    # task.execute_remotely(
-    # queue_name="default"
-    # )
+    task.execute_remotely(
+    queue_name="default"
+    )
 
 
     
 
     # # print(f"Fetching building: {args.building_id}")
-    # fetch_building_rooms(args.building_id, room_details_token)
-    # create_building_dataset(args.building_id)
+    fetch_building_rooms(args.building_id, room_details_token)
+    create_building_dataset(args.building_id)
 
-    fetch_room_temps(939,room_details_token)
+    
