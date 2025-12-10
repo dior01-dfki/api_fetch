@@ -13,18 +13,18 @@ load_dotenv(find_dotenv())
 
 
 # Your token reading code (which you confirmed is correct)
-buildings_token = os.getenv("buildings_token")
 
-# Add a check to confirm the token was read
-if buildings_token is None:
+
+
+building_token = os.environ['buildings_token']
+hca_token = os.environ['hca_token']
+room_token = os.environ['rooms_token']
+units_token = os.environ['units_token']
+hca_details_token = os.environ['hca_details_token']
+room_details_token = os.environ['room_details_token']
+
+if building_token is None:
     print("FATAL: buildings_token was not found in the environment!")
-
-buildings_token = os.getenv("buildings_token")
-hca_token = os.getenv("hca_token")
-rooms_token = os.getenv("rooms_token")
-units_token = os.getenv("units_token")
-hca_details_token = os.getenv("hca_details_token")
-room_details_token = os.getenv("room_details_token")
 
 hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
 room_meta_data = pd.read_csv("metadata/rooms_metadata.csv")
