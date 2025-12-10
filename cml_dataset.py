@@ -48,6 +48,7 @@ def create_meta_dataset():
     dataset.finalize()
 
 def create_building_dataset(building_id):
+    output_dir = f"./{building_id}/"
     parent_dataset = Dataset.get(
         dataset_project=dataset_project,
         dataset_name=dataset_name,
@@ -60,9 +61,9 @@ def create_building_dataset(building_id):
         dataset_version="0.0.1",
         parent_datasets=[parent_dataset],
     )
-    dataset.add_files("room_temp_ts.csv")
-    dataset.add_files("allocator_ts.csv")
-    dataset.add_files("units_ts.csv")
+    dataset.add_files(os.path.join(output_dir, "room_temp_ts.csv"))
+    dataset.add_files(os.path.join(output_dir, "allocator_ts.csv"))
+    dataset.add_files(os.path.join(output_dir, "units_ts.csv"))
     dataset.upload()
     dataset.finalize()
 
@@ -122,13 +123,18 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
         units_df_list.append(units_data)
     
     building__room_df = pd.concat(room_df_list, ignore_index=True)
-    building__room_df.to_csv(f"room_temp_ts.csv", index=False)
+    #building__room_df.to_csv(f"room_temp_ts.csv", index=False)
 
     building__hca_df =  pd.concat(hca_df_list, ignore_index=True)
-    building__hca_df.to_csv(f"allocator_ts.csv", index=False)
+    #building__hca_df.to_csv(f"allocator_ts.csv", index=False)
 
     units__hca_df = pd.concat(units_df_list, ignore_index=True)
-    units__hca_df.to_csv(f"units_ts.csv",index=False)
+    #units__hca_df.to_csv(f"units_ts.csv",index=False)
+
+    Task.upload_artifact(name="room_temp_ts.csv", artifact_object=building__room_df)
+    Task.upload_artifact(name="allocator_ts.csv", artifact_object=building__hca_df)
+    Task.upload_artifact(name="units_ts.csv", artifact_object=units__hca_df)
+    return building__room_df, building__hca_df, units__hca_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
     
@@ -202,11 +208,15 @@ if __name__ == "__main__":
     # # If remote flag is set, configure and execute remotely
     # #if args.remote:
 
-    
-
+    output_dir = f"./{args.building_id}/"
+    os.makedirs(output_dir, exist_ok=True)
 
     # # print(f"Fetching building: {args.building_id}")
-    fetch_building_rooms(args.building_id, room_details_token)
+    building__room_df, building__hca_df, units__hca_df = fetch_building_rooms(args.building_id, room_details_token)
+    
+    building__room_df.to_csv(os.path.join(output_dir, "room_temp_ts.csv"), index=False)
+    building__hca_df.to_csv(os.path.join(output_dir, "allocator_ts.csv"), index=False)
+    units__hca_df.to_csv(os.path.join(output_dir, "units_ts.csv"), index=False)
     create_building_dataset(args.building_id)
 
     
