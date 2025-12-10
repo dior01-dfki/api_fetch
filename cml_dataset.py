@@ -131,9 +131,9 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
     units__hca_df = pd.concat(units_df_list, ignore_index=True)
     #units__hca_df.to_csv(f"units_ts.csv",index=False)
 
-    Task.upload_artifact(name="room_temp_ts.csv", artifact_object=building__room_df)
-    Task.upload_artifact(name="allocator_ts.csv", artifact_object=building__hca_df)
-    Task.upload_artifact(name="units_ts.csv", artifact_object=units__hca_df)
+    Task.current_task().upload_artifact(name="room_temp_ts.csv", artifact_object=building__room_df)
+    Task.current_task().upload_artifact(name="allocator_ts.csv", artifact_object=building__hca_df)
+    Task.current_task().upload_artifact(name="units_ts.csv", artifact_object=units__hca_df)
     return building__room_df, building__hca_df, units__hca_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
