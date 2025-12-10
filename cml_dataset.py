@@ -7,13 +7,9 @@ import argparse
 import pprint
 
 # Initialize ClearML Task
-# task = Task.init(
-#     project_name="ForeSightNEXT/BaltBest",
-#     task_name="Fetch Building Data"
-# )
 
 # Load environment variables (works locally with .env file)
-#load_dotenv(find_dotenv())
+load_dotenv(find_dotenv())
 
 
 # Your token reading code (which you confirmed is correct)
@@ -81,7 +77,7 @@ def fetch_room_temps(room_id: int, room_details_token: str):
             f"{baseurl}/{room_id}/temperatures",
             headers={'Content-Type': 'application/json',
                      "Authorization": room_details_token},
-            params={'per_page': 1000, 'page': page}
+            params={'per_page': 1000000, 'page': page}
         )
 
         if not (200 <= resp.status_code < 300):
@@ -169,7 +165,7 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         resp = requests.get(
             f"{baseurl}/{hca_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-            params={'per_page': 1000, "page": page}
+            params={'per_page': 1000000, "page": page}
         )
         page += 1
         if 200 <= resp.status_code < 300:
@@ -207,12 +203,7 @@ if __name__ == "__main__":
     # #if args.remote:
 
     
-    # task.execute_remotely(
-    # queue_name="default"
-    # )
 
-
-    
 
     # # print(f"Fetching building: {args.building_id}")
     fetch_building_rooms(args.building_id, room_details_token)
