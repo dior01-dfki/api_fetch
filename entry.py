@@ -34,7 +34,7 @@ def main(building_id:int):
         script = "./cml_dataset.py",
         docker="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04",
         docker_args=docker_env_args,
-        argparse_args=[("--building_id", building_id)],
+        argparse_args=[("building_id", building_id)],
 
     )
 
@@ -50,4 +50,5 @@ if __name__ == "__main__":
         help="specify the building id"
     )
     args = parser.parse_args()
+    print(args.building_id)
     main(args.building_id)
