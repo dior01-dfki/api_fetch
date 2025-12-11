@@ -47,8 +47,8 @@ def create_meta_dataset():
     dataset.upload()
     dataset.finalize()
 
-def create_building_dataset(building_id):
-    output_dir = f"./{building_id}/"
+def create_building_dataset(building_id, output_dir):
+    #output_dir = f"./{building_id}/"
     parent_dataset = Dataset.get(
         dataset_project=dataset_project,
         dataset_name=dataset_name,
@@ -218,6 +218,6 @@ if __name__ == "__main__":
     building__room_df.to_csv(os.path.join(output_dir, "room_temp_ts.csv"), index=False)
     building__hca_df.to_csv(os.path.join(output_dir, "allocator_ts.csv"), index=False)
     units__hca_df.to_csv(os.path.join(output_dir, "units_ts.csv"), index=False)
-    create_building_dataset(args.building_id)
+    create_building_dataset(args.building_id, output_dir)
 
     
