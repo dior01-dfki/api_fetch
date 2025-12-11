@@ -78,7 +78,7 @@ def fetch_room_temps(room_id: int, room_details_token: str):
             f"{baseurl}/{room_id}/temperatures",
             headers={'Content-Type': 'application/json',
                      "Authorization": room_details_token},
-            params={'per_page': 1000000, 'page': page},
+            params={'per_page': 500000, 'page': page},
             timeout=(5,60)
         )
 
@@ -172,7 +172,7 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         resp = requests.get(
             f"{baseurl}/{hca_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-            params={'per_page': 1000000, "page": page},
+            params={'per_page': 500000, "page": page},
             timeout=(5,60)
         )
         page += 1
