@@ -208,10 +208,11 @@ if __name__ == "__main__":
     # # If remote flag is set, configure and execute remotely
     # #if args.remote:
 
-    output_dir = f"./{args.building_id}/"
+    base_dir = os.getcwd()  # this is safe inside ClearML
+    output_dir = os.path.join(base_dir, str(args.building_id))
     os.makedirs(output_dir, exist_ok=True)
 
-    # # print(f"Fetching building: {args.building_id}")
+    print(f"Fetching building: {args.building_id}")
     building__room_df, building__hca_df, units__hca_df = fetch_building_rooms(args.building_id, room_details_token)
     
     building__room_df.to_csv(os.path.join(output_dir, "room_temp_ts.csv"), index=False)
