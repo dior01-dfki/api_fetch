@@ -78,7 +78,8 @@ def fetch_room_temps(room_id: int, room_details_token: str):
             f"{baseurl}/{room_id}/temperatures",
             headers={'Content-Type': 'application/json',
                      "Authorization": room_details_token},
-            params={'per_page': 1000000, 'page': page}
+            params={'per_page': 1000000, 'page': page},
+            timeout=(5,60)
         )
 
         if not (200 <= resp.status_code < 300):
@@ -171,7 +172,8 @@ def fetch_hca_temps(hca_id:int, hca_details_token:str):
         resp = requests.get(
             f"{baseurl}/{hca_id}/temperatures",
             headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
-            params={'per_page': 1000000, "page": page}
+            params={'per_page': 1000000, "page": page},
+            timeout=(5,60)
         )
         page += 1
         if 200 <= resp.status_code < 300:
@@ -190,6 +192,7 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
     resp = requests.get(
         f"{baseurl}/{hca_id}/units",
         headers={'Content-Type': 'application/json',"Authorization": hca_details_token},
+        timeout=(5,60)
     )
     if 200 <= resp.status_code < 300:
         return resp.json()
@@ -212,6 +215,7 @@ if __name__ == "__main__":
     output_dir = os.path.join(base_dir, str(args.building_id))
     os.makedirs(output_dir, exist_ok=True)
 
+    #print(output_dir)
     print(f"Fetching building: {args.building_id}")
     building__room_df, building__hca_df, units__hca_df = fetch_building_rooms(args.building_id, room_details_token)
     
