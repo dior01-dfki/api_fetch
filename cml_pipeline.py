@@ -23,7 +23,7 @@ def main(building_ids):
 
 
     try:
-        base_task = Task.get(
+        base_task = Task.get_task(
             project_name=BASE_TASK_PROJECT,
             task_name=f"{BASE_TASK_NAME}-building 2" 
         )
@@ -34,7 +34,7 @@ def main(building_ids):
         return
 
 
-    step_list = []
+    
     for building_id in building_ids:
 
         task_name = f"{BASE_TASK_NAME}-building {building_id}"
@@ -49,12 +49,12 @@ def main(building_ids):
                 'Args/building_id': building_id
             },
         )
-        step_list.append(f"Building_{building_id}_Fetch")
+        
 
 
     print(f"Executing pipeline on buildings: {building_ids}")
     #pipe.start_locally(queue="default") 
-    pipe.start(queue="default", steps=step_list)
+    pipe.start(queue="default")
     print("Pipeline execution initiated.")
 
 
