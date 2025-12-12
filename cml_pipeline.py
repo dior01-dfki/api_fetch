@@ -19,7 +19,6 @@ def main(building_ids):
         project=PIPELINE_PROJECT_NAME,
         name=PIPELINE_TASK_NAME,
         version="1.0.0",
-        add_pipeline_args=False,
     )
 
 
