@@ -30,7 +30,7 @@ def main(building_id:int):
     #print(docker_env_args)
     task = Task.create(
         project_name="ForeSightNEXT/BaltBest",
-        task_name="Fetch Building Data Remotely",
+        task_name=f"Fetch Building Data Remotely-building {building_id}",
         script = "./cml_dataset.py",
         docker="nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04",
         docker_args=docker_env_args,
