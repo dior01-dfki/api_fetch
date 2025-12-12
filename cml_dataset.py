@@ -214,7 +214,6 @@ if __name__ == "__main__":
     output_dir = os.path.join(absolute_path, str(args.building_id))
     os.makedirs(output_dir, exist_ok=True)
 
-    # os.makedirs(output_dir, exist_ok=True)
 
     # print(f"base_dir: {base_dir}")
     print(f"output_dir: {output_dir}")
@@ -225,6 +224,7 @@ if __name__ == "__main__":
     building__hca_df.to_csv(os.path.join(output_dir, "allocator_ts.csv"), index=False)
     units__hca_df.to_csv(os.path.join(output_dir, "units_ts.csv"), index=False)
 
+    #output_dir = f"./{args.building_id}/"
     create_building_dataset(args.building_id, output_dir)
 
     
