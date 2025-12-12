@@ -48,6 +48,7 @@ def main(building_ids):
                 'Task/name': task_name,
                 'Args/building_id': building_id
             },
+            execution_queue="default",
         )
         
 
@@ -60,5 +61,5 @@ def main(building_ids):
 
 if __name__ == "__main__":
     building_ids = pd.read_csv("metadata/rooms_metadata.csv")['building_id'].unique().tolist()
-    building_ids = [i for i in building_ids if i not in [2,38]]
+    building_ids = [i for i in building_ids if i not in [2,7,13,14,16,17,20,28,38,58,66,73,74]]
     main(building_ids)
