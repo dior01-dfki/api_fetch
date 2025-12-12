@@ -18,7 +18,7 @@ def main(building_ids):
     pipe = PipelineController(
         project=PIPELINE_PROJECT_NAME,
         name=PIPELINE_TASK_NAME,
-        version="1.0.0",
+        version="1.0.1",
     )
 
 
@@ -35,21 +35,28 @@ def main(building_ids):
 
 
     
+    previous_step = None
+
     for building_id in building_ids:
 
         task_name = f"{BASE_TASK_NAME}-building {building_id}"
-
+        step_name = f"Building_{building_id}_Fetch"
 
         pipe.add_step(
-            name=f"Building_{building_id}_Fetch",
+            name=step_name,
             base_task_id=base_task_id,
-            
             parameter_override={
                 'Task/name': task_name,
                 'Args/building_id': building_id
             },
             execution_queue="default",
+            parents=[previous_step] if previous_step else None,
+            continue_behaviour={
+                "continue_on_fail": True
+    }
         )
+
+        previous_step = step_name
         
 
 
@@ -63,3 +70,4 @@ if __name__ == "__main__":
     building_ids = pd.read_csv("metadata/rooms_metadata.csv")['building_id'].unique().tolist()
     building_ids = [i for i in building_ids if i not in [2,7,13,14,16,17,20,28,38,58,66,73,74]]
     main(building_ids)
+    # [4, 10, 18, 21, 23, 24, 26, 39, 45, 46, 47, 50, 52, 53, 57]
