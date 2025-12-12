@@ -61,9 +61,7 @@ def create_building_dataset(building_id, output_dir):
         dataset_version="0.0.1",
         parent_datasets=[parent_dataset],
     )
-    dataset.add_files(os.path.join(output_dir, "room_temp_ts.csv"))
-    dataset.add_files(os.path.join(output_dir, "allocator_ts.csv"))
-    dataset.add_files(os.path.join(output_dir, "units_ts.csv"))
+    dataset.add_files(path=output_dir, dataset_path=f"building-{str(building_id)}")
     dataset.upload()
     dataset.finalize()
 
@@ -132,9 +130,9 @@ def fetch_building_rooms(building_id:int, room_details_token:str):
     units__hca_df = pd.concat(units_df_list, ignore_index=True)
     #units__hca_df.to_csv(f"units_ts.csv",index=False)
 
-    Task.current_task().upload_artifact(name="room_temp_ts.csv", artifact_object=building__room_df)
-    Task.current_task().upload_artifact(name="allocator_ts.csv", artifact_object=building__hca_df)
-    Task.current_task().upload_artifact(name="units_ts.csv", artifact_object=units__hca_df)
+    # Task.current_task().upload_artifact(name="room_temp_ts.csv", artifact_object=building__room_df)
+    # Task.current_task().upload_artifact(name="allocator_ts.csv", artifact_object=building__hca_df)
+    # Task.current_task().upload_artifact(name="units_ts.csv", artifact_object=units__hca_df)
     return building__room_df, building__hca_df, units__hca_df
 
 def fetch_room_hcas(room_id:int, hca_details_token:str):
@@ -216,14 +214,17 @@ if __name__ == "__main__":
     output_dir = os.path.join(absolute_path, str(args.building_id))
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"base_dir: {base_dir}")
+    # os.makedirs(output_dir, exist_ok=True)
+
+    # print(f"base_dir: {base_dir}")
     print(f"output_dir: {output_dir}")
-    print(f"Fetching building: {args.building_id}")
+    # print(f"Fetching building: {args.building_id}")
     building__room_df, building__hca_df, units__hca_df = fetch_building_rooms(args.building_id, room_details_token)
     
     building__room_df.to_csv(os.path.join(output_dir, "room_temp_ts.csv"), index=False)
     building__hca_df.to_csv(os.path.join(output_dir, "allocator_ts.csv"), index=False)
     units__hca_df.to_csv(os.path.join(output_dir, "units_ts.csv"), index=False)
+
     create_building_dataset(args.building_id, output_dir)
 
     
