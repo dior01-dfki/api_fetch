@@ -202,15 +202,12 @@ def fetch_hca_units(hca_id:int, hca_details_token:str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--building_id", type=int, default=57, help="Building ID to fetch")
-    # #parser.add_argument("--remote", action="store_true", help="Execute remotely on ClearML agent")
     
     args = parser.parse_args()
     
-    # # If remote flag is set, configure and execute remotely
-    # #if args.remote:
 
     absolute_path = f"/tmp/building_{args.building_id}"
-    base_dir = os.getcwd()  # this is safe inside ClearML
+
     output_dir = os.path.join(absolute_path, str(args.building_id))
     os.makedirs(output_dir, exist_ok=True)
 
