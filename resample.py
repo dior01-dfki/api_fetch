@@ -137,7 +137,7 @@ def main(building_id:int):
     building_metadata = pd.read_csv(f"{local_path}/building_metadata.csv")
 
     # Room data resampling and merging with meteodata
-    df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv",compression='gzip',index_col=0)
+    df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv",index_col=0)
     df_room_resampled = room_resample(df_room,building_id, building_metadata)
     df_room_resampled.reset_index(inplace=True)
     hca_metadata = pd.read_csv(f"{local_path}/hca_metadata.csv")
@@ -145,9 +145,9 @@ def main(building_id:int):
     print(df_room_resampled.head())
 
     # HCA data resampling and hi-res unit calculation
-    df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv",compression='gzip')
+    df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv")
     df_hca_resampled = hca_resample(df_hca)
-    df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv",compression='gzip',index_col=0)
+    df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv",index_col=0)
     df_units_resampled = units_resample(df_units, df_hca_resampled)
     df_room_resampled.set_index(['heat_cost_allocator_id','ts'],inplace=True)
     combined = df_room_resampled.join(df_units_resampled.set_index(['heat_cost_allocator_id','ts']), how='left')
