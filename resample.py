@@ -105,6 +105,8 @@ def room_resample(df,building_id, building_metadata):
     city = building_metadata[building_metadata['building_id']==building_id]['city'].values[0]
     latitude,longitude = geo_data[city]['latitude'], geo_data[city]['longitude']
     meteo_data = fetch_meteodata(latitude, longitude, start, end)
+    print(f"meteo_data head: {meteo_data.head()}")
+    print(f"room data head: {df.head()}")
     hourly_room = (
         df
         .set_index('ts')
