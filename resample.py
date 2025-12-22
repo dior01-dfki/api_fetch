@@ -159,6 +159,7 @@ def get_local_copy(building_id:int):
     local_path = dataset.get_local_copy()
     print(f"Dataset local path: {local_path}")
     print(f"Contents: {os.listdir(local_path)}")
+    print(f"building_contents: {os.listdir(os.path.join(local_path, f'building-{building_id}'))}")
     return local_path
 
 def remote_test():
