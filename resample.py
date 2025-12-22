@@ -131,8 +131,9 @@ def units_resample(df, hourly_alloc):
     hi_res_units = calculate_hi_res(hourly_alloc.reset_index(), df)
     return hi_res_units
 
-def main(local_path:str):
-    building_id = 13
+def main(building_id:int):
+    #building_id = 13
+    local_path = get_local_copy(building_id)
     building_metadata = pd.read_csv(f"{local_path}/building_metadata.csv")
 
     # Room data resampling and merging with meteodata
@@ -167,7 +168,7 @@ def remote_test():
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
 
-    main(get_local_copy(50))
+    main(50)
 
 # 
 if __name__ == "__main__":
