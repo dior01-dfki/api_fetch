@@ -4,7 +4,7 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from typing import List
 from meteostat import Point, Daily, Hourly
-from clearml import Task
+from clearml import Task, Dataset
 
 
 def calculate_hi_res(df_htd, df_hca):
@@ -131,22 +131,22 @@ def units_resample(df, hourly_alloc):
     hi_res_units = calculate_hi_res(hourly_alloc.reset_index(), df)
     return hi_res_units
 
-def main():
+def main(local_path:str):
     building_id = 13
-    building_metadata = pd.read_csv("metadata/building_metadata.csv")
+    building_metadata = pd.read_csv(f"{local_path}/building_metadata.csv")
 
     # Room data resampling and merging with meteodata
-    df_room = pd.read_csv(f"{building_id}/room_temp_ts.csv",compression='gzip',index_col=0)
+    df_room = pd.read_csv(f"{local_path}/{building_id}/room_temp_ts.csv",compression='gzip',index_col=0)
     df_room_resampled = room_resample(df_room,building_id, building_metadata)
     df_room_resampled.reset_index(inplace=True)
-    hca_metadata = pd.read_csv("metadata/hca_metadata.csv")
+    hca_metadata = pd.read_csv(f"{local_path}/hca_metadata.csv")
     df_room_resampled = df_room_resampled.merge(hca_metadata[['heat_cost_allocator_id','room_id']], on='room_id', how='left')
     print(df_room_resampled.head())
 
     # HCA data resampling and hi-res unit calculation
-    df_hca = pd.read_csv(f"{building_id}/allocator_ts.csv",compression='gzip')
+    df_hca = pd.read_csv(f"{local_path}/{building_id}/allocator_ts.csv",compression='gzip')
     df_hca_resampled = hca_resample(df_hca)
-    df_units = pd.read_csv(f"{building_id}/units_ts.csv",compression='gzip',index_col=0)
+    df_units = pd.read_csv(f"{local_path}/{building_id}/units_ts.csv",compression='gzip',index_col=0)
     df_units_resampled = units_resample(df_units, df_hca_resampled)
     df_room_resampled.set_index(['heat_cost_allocator_id','ts'],inplace=True)
     combined = df_room_resampled.join(df_units_resampled.set_index(['heat_cost_allocator_id','ts']), how='left')
@@ -154,13 +154,21 @@ def main():
 
     print(combined.head())
 
+def get_local_copy(building_id:int):
+    dataset = Dataset.get(dataset_project='ForeSightNEXT/BaltBest',dataset_name=f"Building-{building_id}", dataset_version='0.0.1')
+    local_path = dataset.get_local_copy()
+    return local_path
+
 def remote_test():
     task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Resample Test Remote Execution')
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
-    main()
 
+    main(get_local_copy(50))
+
+# 
 if __name__ == "__main__":
     remote_test()
+    
 
     
