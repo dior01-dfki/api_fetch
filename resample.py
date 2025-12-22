@@ -6,6 +6,7 @@ from typing import List
 from meteostat import Point, Daily, Hourly
 from clearml import Task, Dataset
 import os
+from joblib import Parallel, delayed
 
 def calculate_hi_res(df_htd, df_hca):
 
@@ -167,6 +168,9 @@ def main(building_id:int):
     print(f"final combined.head():\n{combined.head()}")
     combined['building_id'] = building_id
     combined.reset_index(inplace=True)
+    return combined
+
+
 def get_local_copy(building_id:int):
     dataset = Dataset.get(dataset_project='ForeSightNEXT/BaltBest',dataset_name=f"Building-{building_id}", dataset_version='0.0.1')
     local_path = dataset.get_local_copy()
@@ -177,12 +181,18 @@ def remote_test():
     task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Resample Test Remote Execution')
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
-
-    main(4)
+    building_ids = [58, 26, 57, 52, 17, 2, 45, 16, 47, 50, 28, 13, 46, 39, 14, 53, 18, 73, 7, 66, 38, 74, 4, 20, 23, 21, 10, 24, 48, 5, 31]
+    #main(4)
+    results = Parallel(n_jobs=4)(delayed(main)(building_id) for building_id in building_ids)
+    final_df = pd.concat(results, ignore_index=True)
+    Task.current_task().upload_artifact(name="resampled_data", artifact_object=final_df)
 
 # 
 if __name__ == "__main__":
-    remote_test()
+    #remote_test()
+    building_metadata = pd.read_csv(f"metadata/building_metadata.csv")
+    building_ids = building_metadata['building_id'].unique().tolist()
+    print(building_ids)
     
 
     
