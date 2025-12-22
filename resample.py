@@ -5,7 +5,7 @@ from geopy.extra.rate_limiter import RateLimiter
 from typing import List
 from meteostat import Point, Daily, Hourly
 from clearml import Task, Dataset
-
+import os
 
 def calculate_hi_res(df_htd, df_hca):
 
@@ -157,6 +157,8 @@ def main(local_path:str):
 def get_local_copy(building_id:int):
     dataset = Dataset.get(dataset_project='ForeSightNEXT/BaltBest',dataset_name=f"Building-{building_id}", dataset_version='0.0.1')
     local_path = dataset.get_local_copy()
+    print(f"Dataset local path: {local_path}")
+    print(f"Contents: {os.listdir(local_path)}")
     return local_path
 
 def remote_test():
