@@ -5,3 +5,4 @@ python-dotenv
 PyYAML
 meteostat
 geopy
+clearml==1.16.4
