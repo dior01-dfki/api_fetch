@@ -189,10 +189,8 @@ def remote_test():
 
 # 
 if __name__ == "__main__":
-    #remote_test()
-    building_metadata = pd.read_csv(f"metadata/building_metadata.csv")
-    building_ids = building_metadata['building_id'].unique().tolist()
-    print(building_ids)
+    remote_test()
+
     
 
     
