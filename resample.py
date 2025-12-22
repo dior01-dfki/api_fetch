@@ -128,10 +128,7 @@ def hca_resample(df):
     )
     return hourly_alloc
 
-def units_resample(df, hourly_alloc):
-    df["ts"] = pd.to_datetime(df["ts"], utc=True).dt.floor("D")
-    hi_res_units = calculate_hi_res(hourly_alloc.reset_index(), df)
-    return hi_res_units
+
 
 def main(building_id:int):
     #building_id = 13
@@ -139,7 +136,7 @@ def main(building_id:int):
     building_metadata = pd.read_csv(f"{local_path}/building_metadata.csv")
 
     # Room data resampling and merging with meteodata
-    df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv",index_col=0)
+    df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv", compression='gzip',index_col=0)
     df_room_resampled = room_resample(df_room,building_id, building_metadata)
     df_room_resampled.reset_index(inplace=True)
     hca_metadata = pd.read_csv(f"{local_path}/hca_metadata.csv")
@@ -147,22 +144,33 @@ def main(building_id:int):
     print(df_room_resampled.head())
 
     # HCA data resampling and hi-res unit calculation
-    df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv")
+    df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv", compression='gzip',index_col=0)
     df_hca_resampled = hca_resample(df_hca)
-    df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv",index_col=0)
-    df_units_resampled = units_resample(df_units, df_hca_resampled)
+    
+    #df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv", compression='gzip',index_col=0)
+    df_units_resampled = calculate_hi_res(df_hca_resampled.reset_index(), hca_metadata)
     df_room_resampled.set_index(['heat_cost_allocator_id','ts'],inplace=True)
     combined = df_room_resampled.join(df_units_resampled.set_index(['heat_cost_allocator_id','ts']), how='left')
     combined.sort_index(level=['heat_cost_allocator_id','ts'], inplace=True)
 
     print(combined.head())
 
+    combined = combined.join(df_hca_resampled)
+    combined = combined.groupby(['room_id','ts']).agg(
+    #timestamps=pd.NamedAgg(column='ts', aggfunc='count'),
+        hca_units=pd.NamedAgg(column='q_hkv_dt', aggfunc='sum'),
+        inside_temp=pd.NamedAgg(column='temperature', aggfunc='mean'),
+        heater_side_hca_temp=pd.NamedAgg(column='temperature_2', aggfunc='max'),
+        room_side_hca_temp=pd.NamedAgg(column='temperature_1', aggfunc='max'),
+        outside_temp=pd.NamedAgg(column='outside_temp', aggfunc='mean'),
+    )
+    print(f"final combined.head():\n{combined.head()}")
+    combined['building_id'] = building_id
+    combined.reset_index(inplace=True)
 def get_local_copy(building_id:int):
     dataset = Dataset.get(dataset_project='ForeSightNEXT/BaltBest',dataset_name=f"Building-{building_id}", dataset_version='0.0.1')
     local_path = dataset.get_local_copy()
-    print(f"Dataset local path: {local_path}")
-    print(f"Contents: {os.listdir(local_path)}")
-    print(f"building_contents: {os.listdir(os.path.join(local_path, f'building-{building_id}'))}")
+
     return local_path
 
 def remote_test():
@@ -170,7 +178,7 @@ def remote_test():
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
 
-    main(50)
+    main(4)
 
 # 
 if __name__ == "__main__":
