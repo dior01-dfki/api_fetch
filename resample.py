@@ -170,6 +170,13 @@ def main(building_id:int):
     combined.reset_index(inplace=True)
     return combined
 
+def safe_main(building_id:int):
+    try:
+        result = main(building_id)
+        return result
+    except Exception as e:
+        print(f"Error processing building {building_id}: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame on error
 
 def get_local_copy(building_id:int):
     dataset = Dataset.get(dataset_project='ForeSightNEXT/BaltBest',dataset_name=f"Building-{building_id}", dataset_version='0.0.1')
@@ -183,7 +190,7 @@ def remote_test():
     task.execute_remotely(queue_name="default")
     building_ids = [58, 26, 57, 52, 17, 2, 45, 16, 47, 50, 28, 13, 46, 39, 14, 53, 18, 73, 7, 66, 38, 74, 4, 20, 23, 21, 10, 24, 48, 5, 31]
     #main(4)
-    results = Parallel(n_jobs=4)(delayed(main)(building_id) for building_id in building_ids)
+    results = Parallel(n_jobs=4)(delayed(safe_main)(building_id) for building_id in building_ids)
     final_df = pd.concat(results, ignore_index=True)
     Task.current_task().upload_artifact(name="resampled_data", artifact_object=final_df)
 
