@@ -182,6 +182,7 @@ def main(building_id:int):
 def safe_main(building_id:int):
     try:
         result = main(building_id)
+        print(f"Completed processing for building {building_id}")
         return result
     except Exception as e:
         print(f"Error processing building {building_id}: {e}")
