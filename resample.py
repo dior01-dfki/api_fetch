@@ -138,9 +138,9 @@ def main(building_id:int):
 
     # Room data resampling and merging with meteodata
     try:
-        df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv", compression='gzip',index_col=0)
+        df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv", compression='gzip')
     except Exception:
-        df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv", index_col=0)
+        df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv")
 
     df_room_resampled = room_resample(df_room,building_id, building_metadata)
     df_room_resampled.reset_index(inplace=True)
@@ -150,9 +150,9 @@ def main(building_id:int):
 
     # HCA data resampling and hi-res unit calculation
     try:
-        df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv", compression='gzip',index_col=0)
+        df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv", compression='gzip')
     except Exception:
-        df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv", index_col=0)
+        df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv")
         
     df_hca_resampled = hca_resample(df_hca)
     
@@ -176,6 +176,7 @@ def main(building_id:int):
     print(f"final combined.head():\n{combined.head()}")
     combined['building_id'] = building_id
     combined.reset_index(inplace=True)
+    
     return combined
 
 def safe_main(building_id:int):
