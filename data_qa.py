@@ -100,7 +100,7 @@ def main():
     task.execute_remotely(queue_name="default")
 
 
-    dataset = Dataset.get(dataset_name='ResampledData', dataset_project='ForeSightNEXT/BaltBest', dataset_version="0.0.1")
+    dataset = Dataset.get(dataset_name='ResampledData', dataset_project='ForeSightNEXT/BaltBest/resampled', dataset_version="0.0.1")
     local_path = dataset.get_local_copy()
     resampled = pd.read_csv(f"{local_path}/resampled_data.csv",index_col = 0)
     resampled['ts'] = pd.to_datetime(resampled['ts'])
