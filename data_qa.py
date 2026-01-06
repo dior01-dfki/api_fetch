@@ -114,6 +114,7 @@ def main():
     except Exception as e:
         hca_units = pd.read_csv(data_path, compression='gzip', index_col = 0)
     hca_units['ts'] = pd.to_datetime(hca_units['ts'])
+    hca_units.groupby('room_id').resample('D', on='ts').agg({'units':'sum'}).reset_index()
 
     print(f"hca_units.head():\n{hca_units.head()}")
     result = df_qa(resampled, hca_units)
