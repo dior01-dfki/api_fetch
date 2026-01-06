@@ -105,12 +105,17 @@ def main():
     resampled = pd.read_csv(f"{local_path}/resampled_data.csv",index_col = 0)
     resampled['ts'] = pd.to_datetime(resampled['ts'])
 
+    print(f"resampled.head():\n{resampled.head()}")
 
     unit_task = Task.get_task(task_name='Fetch Units Remote Execution', project_name='ForeSightNEXT/BaltBest',task_id='0d438a74ff5c4cbf99ecc8725437f1da')
     data_path = unit_task.artifacts['all_units_data'].get_local_copy()
-    hca_units = pd.read_csv(f"{data_path}/all_units_data.csv",index_col = 0)
+    try:
+        hca_units = pd.read_csv(data_path,index_col = 0)
+    except Exception as e:
+        hca_units = pd.read_csv(data_path, compression='gzip', index_col = 0)
     hca_units['ts'] = pd.to_datetime(hca_units['ts'])
 
+    print(f"hca_units.head():\n{hca_units.head()}")
     result = df_qa(resampled, hca_units)
     Task.current_task().upload_artifact('data_qa_report', artifact_object=result)
 
