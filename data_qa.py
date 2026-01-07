@@ -26,11 +26,10 @@ def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     hca_units = hca_units[hca_units['units'].notna()]
     resampled.ts = pd.to_datetime(resampled.ts)
     hca_units.ts = pd.to_datetime(hca_units.ts)
-    hca_units = (
-        hca_units
-        .dropna(subset=['units'])  
-        .filter(lambda g: (g['units'] != 0).any())  
-    )
+
+    if ((hca_units['units'] == 0).all() or hca_units.empty):
+        return pd.DataFrame()
+    
     hca_units = hca_units.sort_values(['room_id','ts'])
 
     hca_units = fix_yearly_reset(hca_units)
@@ -43,6 +42,8 @@ def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
 
 def calculate_mape_rmse(resampled:pd.DataFrame, hca_units:pd.DataFrame) -> tuple:
     merged = align_hca(resampled, hca_units)
+    if merged.empty:
+        return np.nan, np.nan
     merged = merged[merged.hca_units != 0]
     merged['ape'] = (merged.delta- merged.hca_units).abs() / merged.hca_units.abs()
     merged['squared_error'] = (merged.delta - merged.hca_units) ** 2
@@ -150,6 +151,19 @@ def main():
     print(f"hca_units.head():\n{hca_units.head()}")
     result = df_qa(resampled, hca_units)
     Task.current_task().upload_artifact('data_qa_report', artifact_object=result)
+
+
+    # meta_dataset = Dataset.get(dataset_name='BaltBestMetadata', dataset_project='ForeSightNEXT/BaltBest', dataset_version="0.0.1")
+    # new_dataset = Dataset.create(
+    #     dataset_name='BaltBestMetadata',
+    #     dataset_project='ForeSightNEXT/BaltBest',
+    #     dataset_version='0.0.2',
+    #     parent_datasets=[meta_dataset.id],
+    # )
+    # new_dataset.set_description("This version of metadata includes data QA report done by DFKI. data_qa_report.csv is not part of EBZ")
+    # new_dataset.add_files(path_or_file=result.to_csv(index=True), dataset_path='data_qa_report.csv')
+    # new_dataset.upload()
+    # new_dataset.finalize()
 
 if __name__ == "__main__":
     main()
