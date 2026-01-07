@@ -2,8 +2,40 @@ import pandas as pd
 import numpy as np
 from clearml import Dataset, Task
 
+def fix_yearly_reset(hca_units: pd.DataFrame) -> pd.DataFrame:
+    hca_units = hca_units.sort_values(['heat_cost_allocator_id', 'ts']).copy()
+
+    is_jan1 = (hca_units['ts'].dt.month == 1) & (hca_units['ts'].dt.day == 1)
+
+    offset = (
+        hca_units['units']
+        .shift()
+        .where(is_jan1, 0)
+        .groupby(hca_units['heat_cost_allocator_id'])
+        .cumsum()
+    )
+
+    hca_units['units'] = hca_units['units'] + offset
+    return hca_units
+
+
+
 def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     
+    rooms = resampled['room_id'].unique()
+    hca_units = hca_units[hca_units['room_id'].isin(rooms)].copy()
+    hca_units = hca_units[hca_units['units'].notna()]
+    resampled.ts = pd.to_datetime(resampled.ts)
+    hca_units.ts = pd.to_datetime(hca_units.ts)
+    hca_units = (
+        hca_units
+        .dropna(subset=['units'])  # remove NaNs
+        .groupby('room_id')
+        .filter(lambda g: (g['units'] != 0).any())  # keep only rooms with any non-zero value
+    )
+    hca_units = hca_units.sort_values(['room_id','ts'])
+
+    hca_units = fix_yearly_reset(hca_units)
     hca_units = hca_units.resample('D', on='ts').agg({'units':'sum'}).reset_index()
     res = resampled.copy()
     res = res.resample('D', on='ts').agg({'hca_units':'sum'}).reset_index()
@@ -23,13 +55,13 @@ def count_na(col:pd.Series):
     groups = is_na.ne(is_na.shift()).cumsum()
     na_runs = is_na.groupby(groups).sum()
     na_runs = na_runs[na_runs > 0]
-    out = {f'{i}h_gap':0 for i in range(1,13)}
-    out['more_12h_gap'] = 0
+    out = {f'n_gaps_gte_{i}h':0 for i in range(1,13)}
+    out['n_gaps_gte_>12h'] = 0
     for run in na_runs:
         if run > 12:
-            out['more_12h_gap'] += 1
+            out['n_gaps_gte_>12h'] += 1
         else:
-            out[f'{run}h_gap'] += 1
+            out[f'n_gaps_gte_{run}h'] += 1
     return out
 
 def consecutive_vals(col:pd.Series):
@@ -56,13 +88,13 @@ def consecutive_vals(col:pd.Series):
     #print(val_runs)
     out = {}
     for k in bins:
-        out[f'count_{k}'] = count_out[k]
+        out[f'n_consec_gte_{k}'] = count_out[k]
     for k in bins:    
-        out[f'sum_{k}'] = sum_out[k]
+        out[f'total_len_consec_gte_{k}'] = sum_out[k]
     return out
 
 def df_qa(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
-    cols = [c for c in resampled.columns if c not in ['room_id', 'ts']]
+    cols = [c for c in resampled.columns if c not in ['room_id', 'ts', 'building_id']]
     resampled = resampled.sort_values(['room_id', 'ts'])
     all_rooms = []
 
@@ -78,14 +110,15 @@ def df_qa(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
             # combine into a single row, flattening keys
             combined = {}
             combined.update({f'{k}': v for k, v in gap_summary.items()})
-            combined.update({f'{k}_consec': v for k, v in val_summary.items()})
-            combined.update({'total_rows': len(group[col])})
-            combined.update({'total_non_null': group[col].notna().sum()})
-            combined.update({'total_nan_rows': group[col].isna().sum()})
+            combined.update({f'{k}': v for k, v in val_summary.items()})
+            combined.update({'n_rows': len(group[col])})
+            #combined.update({'total_non_null': group[col].notna().sum()})
+            combined.update({'n_nan_rows': group[col].isna().sum()})
+            combined.update({'non_nan_ratio':group[col].notna().sum() / len(group[col])})
             combined['room_id'] = room_id
             combined['variable'] = col
-            combined['mape_hca_units'] = mape
-            combined['rmse_hca_units'] = rmse
+            combined['upsampling_mape'] = mape
+            combined['upsampling_rmse'] = rmse
             all_rooms.append(combined)
 
     # create final DataFrame and set MultiIndex
