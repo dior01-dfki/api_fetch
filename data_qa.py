@@ -160,8 +160,9 @@ def main():
         dataset_version='0.0.2',
         parent_datasets=[meta_dataset.id],
     )
+    result.to_csv('data_qa_report.csv', index=True)
     new_dataset.set_description("This version of metadata includes data QA report done by DFKI. data_qa_report.csv is not part of EBZ")
-    new_dataset.add_files(path_or_file=result.to_csv(index=True), dataset_path='data_qa_report.csv')
+    new_dataset.add_files(path='data_qa_report.csv')
     new_dataset.upload()
     new_dataset.finalize()
 
