@@ -22,16 +22,14 @@ def fix_yearly_reset(hca_units: pd.DataFrame) -> pd.DataFrame:
 
 def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     
-    rooms = resampled['room_id'].unique()
-    hca_units = hca_units[hca_units['room_id'].isin(rooms)].copy()
+    
     hca_units = hca_units[hca_units['units'].notna()]
     resampled.ts = pd.to_datetime(resampled.ts)
     hca_units.ts = pd.to_datetime(hca_units.ts)
     hca_units = (
         hca_units
-        .dropna(subset=['units'])  # remove NaNs
-        .groupby('room_id')
-        .filter(lambda g: (g['units'] != 0).any())  # keep only rooms with any non-zero value
+        .dropna(subset=['units'])  
+        .filter(lambda g: (g['units'] != 0).any())  
     )
     hca_units = hca_units.sort_values(['room_id','ts'])
 
