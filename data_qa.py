@@ -153,17 +153,17 @@ def main():
     Task.current_task().upload_artifact('data_qa_report', artifact_object=result)
 
 
-    # meta_dataset = Dataset.get(dataset_name='BaltBestMetadata', dataset_project='ForeSightNEXT/BaltBest', dataset_version="0.0.1")
-    # new_dataset = Dataset.create(
-    #     dataset_name='BaltBestMetadata',
-    #     dataset_project='ForeSightNEXT/BaltBest',
-    #     dataset_version='0.0.2',
-    #     parent_datasets=[meta_dataset.id],
-    # )
-    # new_dataset.set_description("This version of metadata includes data QA report done by DFKI. data_qa_report.csv is not part of EBZ")
-    # new_dataset.add_files(path_or_file=result.to_csv(index=True), dataset_path='data_qa_report.csv')
-    # new_dataset.upload()
-    # new_dataset.finalize()
+    meta_dataset = Dataset.get(dataset_name='BaltBestMetadata', dataset_project='ForeSightNEXT/BaltBest', dataset_version="0.0.1")
+    new_dataset = Dataset.create(
+        dataset_name='BaltBestMetadata',
+        dataset_project='ForeSightNEXT/BaltBest',
+        dataset_version='0.0.2',
+        parent_datasets=[meta_dataset.id],
+    )
+    new_dataset.set_description("This version of metadata includes data QA report done by DFKI. data_qa_report.csv is not part of EBZ")
+    new_dataset.add_files(path_or_file=result.to_csv(index=True), dataset_path='data_qa_report.csv')
+    new_dataset.upload()
+    new_dataset.finalize()
 
 if __name__ == "__main__":
     main()
