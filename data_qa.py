@@ -37,6 +37,8 @@ def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     res = resampled.copy()
     res = res.resample('D', on='ts').agg({'hca_units':'sum'}).reset_index()
     hca_units['delta'] = hca_units['units'].diff()
+    #Need to think about this part of calculating hca_units delta, this part of the code fills negative deltas with 0
+    hca_units['delta'] = hca_units[hca_units['delta']].apply(lambda x: 0 if x < 0 else x)
     merged = pd.merge(res, hca_units, on=['ts'], how='inner')
     return merged
 
@@ -83,7 +85,7 @@ def consecutive_vals(col:pd.Series):
                 count_out[k] += 1
                 sum_out[k] += run
                 #break is added to avoid double counting
-                break
+                #break
     #print(val_runs)
     out = {}
     for k in bins:
@@ -114,6 +116,8 @@ def df_qa(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
             #combined.update({'total_non_null': group[col].notna().sum()})
             combined.update({'n_nan_rows': group[col].isna().sum()})
             combined.update({'non_nan_ratio':group[col].notna().sum() / len(group[col])})
+            combined.update({'non_zero_rows': (group[col] != 0).sum()})
+            combined.update({'non_zero_ratio': (group[col] != 0).sum() / len(group[col])})
             combined['room_id'] = room_id
             combined['variable'] = col
             combined['upsampling_mape'] = mape

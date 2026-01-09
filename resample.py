@@ -37,7 +37,7 @@ def calculate_hi_res(df_htd, df_hca):
     )
 
     # Final DataFrame with columns: 'heat_cost_allocator_id', 'ts', 'q_hkv_dt'
-    result = df[['heat_cost_allocator_id', 'ts', 'q_hkv_dt']]
+    result = df[['heat_cost_allocator_id', 'ts','temperature_1','temperature_2', 'q_hkv_dt','room_id']]
     return result
 
 def geocoding(cities:List[str]):
@@ -129,9 +129,11 @@ def hca_resample(df):
     )
     return hourly_alloc
 
-
+def clean_df(df):
+    return df.loc[:,~df.columns.str.contains('^Unnamed')]
 
 def main(building_id:int):
+
     #building_id = 13
     local_path = get_local_copy(building_id)
     building_metadata = pd.read_csv(f"{local_path}/building_metadata.csv")
@@ -145,7 +147,7 @@ def main(building_id:int):
     df_room_resampled = room_resample(df_room,building_id, building_metadata)
     df_room_resampled.reset_index(inplace=True)
     hca_metadata = pd.read_csv(f"{local_path}/hca_metadata.csv")
-    df_room_resampled = df_room_resampled.merge(hca_metadata[['heat_cost_allocator_id','room_id']], on='room_id', how='left')
+    
     print(df_room_resampled.head())
 
     # HCA data resampling and hi-res unit calculation
@@ -158,13 +160,16 @@ def main(building_id:int):
     
     #df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv", compression='gzip',index_col=0)
     df_units_resampled = calculate_hi_res(df_hca_resampled.reset_index(), hca_metadata)
-    df_room_resampled.set_index(['heat_cost_allocator_id','ts'],inplace=True)
-    combined = df_room_resampled.join(df_units_resampled.set_index(['heat_cost_allocator_id','ts']), how='left')
-    combined.sort_index(level=['heat_cost_allocator_id','ts'], inplace=True)
+
+
+    df_room_resampled.set_index(['room_id','ts'],inplace=True)
+    
+    combined = df_units_resampled.set_index(['room_id','ts']).join(df_room_resampled, how='outer')
+    combined.sort_index(level=['room_id','ts'], inplace=True)
 
     print(combined.head())
 
-    combined = combined.join(df_hca_resampled)
+    #combined = combined.join(df_hca_resampled)
     combined = combined.groupby(['room_id','ts']).agg(
     #timestamps=pd.NamedAgg(column='ts', aggfunc='count'),
         hca_units=pd.NamedAgg(column='q_hkv_dt', aggfunc='sum'),
@@ -174,9 +179,11 @@ def main(building_id:int):
         outside_temp=pd.NamedAgg(column='outside_temp', aggfunc='mean'),
     )
     print(f"final combined.head():\n{combined.head()}")
+    print(f"rooms present in building {building_id}: {combined.index.get_level_values('room_id').nunique()}")
     combined['building_id'] = building_id
     combined.reset_index(inplace=True)
-    
+    print(f"rooms present in building {building_id}: {combined['room_id'].nunique()}")
+    combined = clean_df(combined)
     return combined
 
 def safe_main(building_id:int):
@@ -198,16 +205,70 @@ def remote_test():
     task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Resample Test Remote Execution')
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
-    building_ids = [58, 26, 57, 52, 17, 2, 45, 16, 47, 50, 28, 13, 46, 39, 14, 53, 18, 73, 7, 66, 38, 74, 4, 20, 23, 21, 10, 24, 48, 5, 31]
-    #main(4)
+    #building_ids = [58, 26, 57, 52, 17, 2, 45, 16, 47, 50, 28, 13, 46, 39, 14, 53, 18, 73, 7, 66, 38, 74, 4, 20, 23, 21, 10, 24, 48, 5, 31]
+    building_ids = [4, 7, 10, 13, 14, 16, 17, 18, 20, 21, 23, 24, 26, 28, 38, 39, 45, 46, 47, 50, 52, 53, 57, 58, 66, 73, 74]
+    res = main(20)
+    res.to_csv("resampled_building_20.csv",index=False)
+    #print(res.room_id.unique())
     results = Parallel(n_jobs=4)(delayed(safe_main)(building_id) for building_id in building_ids)
     final_df = pd.concat(results, ignore_index=True)
     Task.current_task().upload_artifact(name="resampled_data", artifact_object=final_df)
 
+def fetch_units(path,building_id:int):
+    try:
+        try:
+            df_units = pd.read_csv(f"{path}/building-{building_id}/units_ts.csv", compression='gzip', index_col=0)
+        except Exception:
+            df_units = pd.read_csv(f"{path}/building-{building_id}/units_ts.csv", index_col=0)
+    except Exception as e:
+        print(f"Error reading units data for building {building_id}: {e}")
+        return pd.DataFrame()  # Return empty DataFrame on error
+    hca_metadata = pd.read_csv(f"{path}/hca_metadata.csv")
+    hca_metadata = hca_metadata[['heat_cost_allocator_id','room_id']]
+    rooms_metadata = pd.read_csv(f"{path}/rooms_metadata.csv")
+    rooms_metadata = rooms_metadata[['room_id','building_id']]
+    metadata = hca_metadata.merge(rooms_metadata, on='room_id',how='inner')
+    df = df_units.merge(metadata, on='heat_cost_allocator_id',how='inner')
+    return df
+    #return df_units
+
+def fetch_units_remote():
+    task = Task.init(
+        project_name='ForeSightNEXT/BaltBest',
+        task_name='Fetch Units Remote Execution'
+    )
+    task.set_packages(packages='requirements.txt')
+    task.execute_remotely(queue_name="default")
+
+    dataset = Dataset.get(
+        dataset_project='ForeSightNEXT/BaltBest',
+        dataset_name="BaltBest",
+        dataset_version='0.0.1'
+    )
+    local_path = dataset.get_local_copy()
+
+    building_ids = [4, 7, 10, 13, 14, 16, 17, 18, 20, 21, 23, 24, 26, 28, 38, 39, 45, 46, 47, 50, 52, 53, 57, 58, 66, 73, 74]
+
+    res = Parallel(n_jobs=4)(
+        delayed(fetch_units)(
+            local_path,
+            bid
+        )
+        for bid in building_ids
+    )
+
+    final_df = pd.concat(res, ignore_index=True)
+    Task.current_task().upload_artifact(
+        name="all_units_data",
+        artifact_object=final_df
+    )
 # 
 if __name__ == "__main__":
+    #remote_test()
+    # building_ids = [4, 7, 10, 13, 14, 16, 17, 18, 20, 21, 23, 24, 26, 28, 38, 39, 45, 46, 47, 50, 52, 53, 57, 58, 66, 73, 74]
+    # print(len(building_ids))
+    # fetch_units_remote()
     remote_test()
-
     
 
     
