@@ -47,7 +47,7 @@ def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     res = res.resample('D', on='ts').agg({'hca_units':'sum'}).reset_index()
     hca_units['delta'] = hca_units['units'].diff()
     #Need to think about this part of calculating hca_units delta, this part of the code fills negative deltas with 0
-    hca_units['delta'] = hca_units[hca_units['delta']].apply(lambda x: 0 if x < 0 else x)
+    #hca_units['delta'] = hca_units[hca_units['delta']].apply(lambda x: 0 if x < 0 else x)
     merged = pd.merge(res, hca_units, on=['ts'], how='inner')
     return merged
 
