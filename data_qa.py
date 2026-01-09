@@ -2,21 +2,30 @@ import pandas as pd
 import numpy as np
 from clearml import Dataset, Task
 
-def fix_yearly_reset(hca_units: pd.DataFrame) -> pd.DataFrame:
-    hca_units = hca_units.sort_values(['heat_cost_allocator_id', 'ts']).copy()
+def fix_reset(hca_units: pd.DataFrame) -> pd.DataFrame:
+    hca_units = hca_units.sort_values(
+        ['heat_cost_allocator_id', 'ts']
+    ).copy()
 
-    is_jan1 = (hca_units['ts'].dt.month == 1) & (hca_units['ts'].dt.day == 1)
+    def _fix(group: pd.DataFrame) -> pd.DataFrame:
+        prev_units = group['units'].shift()
+        # detect reset when units drop to 0 after being positive
+        is_reset = (group['units'] == 0) & (prev_units > 0)
 
-    offset = (
-        hca_units['units']
-        .shift()
-        .where(is_jan1, 0)
-        .groupby(hca_units['heat_cost_allocator_id'])
-        .cumsum()
+        offset = (
+            prev_units
+            .where(is_reset, 0)
+            .cumsum()
+        )
+
+        group['units'] = group['units'] + offset
+        return group
+
+    return (
+        hca_units
+        .groupby('heat_cost_allocator_id', group_keys=False)
+        .apply(_fix)
     )
-
-    hca_units['units'] = hca_units['units'] + offset
-    return hca_units
 
 
 
@@ -32,7 +41,7 @@ def align_hca(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
     
     hca_units = hca_units.sort_values(['room_id','ts'])
 
-    hca_units = fix_yearly_reset(hca_units)
+    hca_units = fix_reset(hca_units)
     hca_units = hca_units.resample('D', on='ts').agg({'units':'sum'}).reset_index()
     res = resampled.copy()
     res = res.resample('D', on='ts').agg({'hca_units':'sum'}).reset_index()
