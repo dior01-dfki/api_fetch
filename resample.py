@@ -229,18 +229,22 @@ def resample_remote():
     task.execute_remotely(queue_name="default")
     #building_ids = [58, 26, 57, 52, 17, 2, 45, 16, 47, 50, 28, 13, 46, 39, 14, 53, 18, 73, 7, 66, 38, 74, 4, 20, 23, 21, 10, 24, 48, 5, 31]
     building_ids = [4, 7, 10, 13, 14, 16, 17, 18, 20, 21, 23, 24, 26, 28, 38, 39, 45, 46, 47, 50, 52, 53, 57, 58, 66, 73, 74]
-    res = main(20)
-    res.to_csv("resampled_building_20.csv",index=False)
+    #res = main(20)
+    absolute_path = f"/tmp/resampled"
+    os.makedirs(absolute_path, exist_ok=True)
+
+    #res.to_csv("resampled_building_20.csv",index=False)
     #print(res.room_id.unique())
     results = Parallel(n_jobs=4)(delayed(safe_main)(building_id) for building_id in building_ids)
     final_df = pd.concat(results, ignore_index=True)
+    final_df.to_csv(f'{absolute_path}/resampled_data.csv', index=False)
     Task.current_task().upload_artifact(name="resampled_data", artifact_object=final_df)
     new_dataset = Dataset.create(
         dataset_project='ForeSightNEXT/BaltBest/resampled',
         dataset_name='ResampledData',
         dataset_version='0.0.1'
     )
-    new_dataset.add_files('resampled_data.csv')
+    new_dataset.add_files(f'{absolute_path}/resampled_data.csv')
     new_dataset.upload()
     new_dataset.finalize()
 def fetch_units(path,building_id:int):
