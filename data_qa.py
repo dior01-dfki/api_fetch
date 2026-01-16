@@ -122,7 +122,7 @@ def df_qa(resampled: pd.DataFrame, hca_units:pd.DataFrame) -> pd.DataFrame:
             combined.update({f'{k}': v for k, v in gap_summary.items()})
             combined.update({f'{k}': v for k, v in val_summary.items()})
             combined.update({'n_rows': len(group[col])})
-            #combined.update({'total_non_null': group[col].notna().sum()})
+            combined.update({'total_non_null': group[col].notna().sum()})
             combined.update({'n_nan_rows': group[col].isna().sum()})
             combined.update({'non_nan_ratio':group[col].notna().sum() / len(group[col])})
             combined.update({'non_zero_rows': (group[col] != 0).sum()})
@@ -179,5 +179,15 @@ def main():
     new_dataset.upload()
     new_dataset.finalize()
 
+def test_dataset():
+    dataset = Dataset.create(
+        dataset_name='AcceptableRooms',
+        dataset_project='ForeSightNEXT/BaltBest/resampled',
+        dataset_version='0.0.1',
+    )
+    dataset.add_files(path='acceptable_rooms.csv')
+    dataset.upload()
+    dataset.finalize()
+
 if __name__ == "__main__":
-    main()
+    test_dataset()
