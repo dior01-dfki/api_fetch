@@ -8,7 +8,7 @@ from clearml import Task, Dataset
 import os
 from joblib import Parallel, delayed
 
-def calculate_hi_res(df_htd, df_hca):
+def calculate_hi_res_roomwise(df_htd, df_hca):
 
 
     # df_htd = pd.read_csv(data_root.joinpath('heat_cost_allocator_temp_data.csv'))
@@ -27,8 +27,11 @@ def calculate_hi_res(df_htd, df_hca):
     df_htd['dt'] = np.where(df_htd['heat_cost_allocator_id'] == df_htd['heat_cost_allocator_id'].shift(1), df_htd['dt'], np.nan)
 
     # 3. Merge with `heat_cost_allocator` to get `qs`, `kcw`, and `kcl` columns
+    print(f"df_htd head before merge: {df_htd.head()}")
+    print(f"df_hca head before merge: {df_hca.head()}")
     df = pd.merge(df_htd, df_hca, on='heat_cost_allocator_id', how='left')
 
+    
     # 4. Calculate `q_hkv_dt` using the condition and formula
     df['q_hkv_dt'] = np.where(
         (df['temperature_2'] - df['temperature_1']) > 3,
@@ -37,13 +40,24 @@ def calculate_hi_res(df_htd, df_hca):
     )
 
     # Final DataFrame with columns: 'heat_cost_allocator_id', 'ts', 'q_hkv_dt'
-    result = df[['heat_cost_allocator_id', 'ts','temperature_1','temperature_2', 'q_hkv_dt','room_id']]
+    result = (
+        df
+        .groupby(['room_id','ts'])
+        .agg(
+            {'temperature_1':'max',
+             "temperature_2":'max',
+             'q_hkv_dt':'sum',
+            'outside_temp':'mean'
+             }
+        ).sort_index()
+    ).reset_index()
+    #result = df[['heat_cost_allocator_id', 'ts','temperature_1','temperature_2', 'q_hkv_dt','room_id','outside_temp']]
     return result
 
 def geocoding(cities:List[str]):
     geo_data = {}
 
-    geolocator = Nominatim(user_agent="your_app_name")
+    geolocator = Nominatim(user_agent="agent")
     geocode = RateLimiter(
         geolocator.geocode,
         min_delay_seconds=1.1,
@@ -85,7 +99,27 @@ def alloc_resample(df):
     )
     return hourly_alloc
 
-def room_resample(df,building_id, building_metadata):
+def room_resample(df):
+    df['ts'] = pd.to_datetime(df['ts'], utc=True)
+    
+    #
+    #city = building_metadata[building_metadata['building_id']==building_id]['city'].values[0]
+    #latitude,longitude = geo_data[city]['latitude'], geo_data[city]['longitude']
+    #meteo_data = fetch_meteodata(latitude, longitude, start, end)
+    #print(f"meteo_data head: {meteo_data.head()}")
+    #print(f"room data head: {df.head()}")
+    hourly_room = (
+        df
+        .set_index('ts')
+        .groupby('room_id')[['temperature']]
+        .resample('h')
+        .mean()
+    )
+    #hourly_room = hourly_room.join(meteo_data.set_index('ts'), how='left')
+    return hourly_room
+
+def hca_resample(df, building_id:int,building_metadata:pd.DataFrame):
+
     df['ts'] = pd.to_datetime(df['ts'], utc=True)
     start = (
         df["ts"]
@@ -102,24 +136,13 @@ def room_resample(df,building_id, building_metadata):
         .tz_localize(None)
         .ceil("D")
     )
+
     geo_data = geocoding(building_metadata['city'].unique().tolist())
     city = building_metadata[building_metadata['building_id']==building_id]['city'].values[0]
     latitude,longitude = geo_data[city]['latitude'], geo_data[city]['longitude']
     meteo_data = fetch_meteodata(latitude, longitude, start, end)
     print(f"meteo_data head: {meteo_data.head()}")
-    print(f"room data head: {df.head()}")
-    hourly_room = (
-        df
-        .set_index('ts')
-        .groupby('room_id')[['temperature']]
-        .resample('h')
-        .mean()
-    )
-    hourly_room = hourly_room.join(meteo_data.set_index('ts'), how='left')
-    return hourly_room
-
-def hca_resample(df):
-    df['ts'] = pd.to_datetime(df['ts'], utc=True)
+    
     hourly_alloc = (
         df
         .set_index('ts')
@@ -127,6 +150,7 @@ def hca_resample(df):
         .resample('h')
         .mean()
     )
+    hourly_alloc = hourly_alloc.join(meteo_data.set_index('ts'), how='left')
     return hourly_alloc
 
 def clean_df(df):
@@ -144,7 +168,7 @@ def main(building_id:int):
     except Exception:
         df_room = pd.read_csv(f"{local_path}/building-{building_id}/room_temp_ts.csv")
 
-    df_room_resampled = room_resample(df_room,building_id, building_metadata)
+    df_room_resampled = room_resample(df_room)
     df_room_resampled.reset_index(inplace=True)
     hca_metadata = pd.read_csv(f"{local_path}/hca_metadata.csv")
     
@@ -156,10 +180,10 @@ def main(building_id:int):
     except Exception:
         df_hca = pd.read_csv(f"{local_path}/building-{building_id}/allocator_ts.csv")
         
-    df_hca_resampled = hca_resample(df_hca)
+    df_hca_resampled = hca_resample(df_hca,building_id=building_id, building_metadata=building_metadata)
     
     #df_units = pd.read_csv(f"{local_path}/building-{building_id}/units_ts.csv", compression='gzip',index_col=0)
-    df_units_resampled = calculate_hi_res(df_hca_resampled.reset_index(), hca_metadata)
+    df_units_resampled = calculate_hi_res_roomwise(df_hca_resampled.reset_index(), hca_metadata)
 
 
     df_room_resampled.set_index(['room_id','ts'],inplace=True)
@@ -169,15 +193,13 @@ def main(building_id:int):
 
     print(combined.head())
 
-    #combined = combined.join(df_hca_resampled)
-    combined = combined.groupby(['room_id','ts']).agg(
-    #timestamps=pd.NamedAgg(column='ts', aggfunc='count'),
-        hca_units=pd.NamedAgg(column='q_hkv_dt', aggfunc='sum'),
-        inside_temp=pd.NamedAgg(column='temperature', aggfunc='mean'),
-        heater_side_hca_temp=pd.NamedAgg(column='temperature_2', aggfunc='max'),
-        room_side_hca_temp=pd.NamedAgg(column='temperature_1', aggfunc='max'),
-        outside_temp=pd.NamedAgg(column='outside_temp', aggfunc='mean'),
-    )
+    #combined = combined.join(df_hca_resampled, how='outer')
+    combined.rename(columns={'q_hkv_dt':'hca_units',
+                                'temperature':'inside_temp',
+                                'temperature_2':'heater_side_hca_temp',
+                                'temperature_1':'room_side_hca_temp',
+                                'outside_temp':'outside_temp'
+                                }, inplace=True)
     print(f"final combined.head():\n{combined.head()}")
     print(f"rooms present in building {building_id}: {combined.index.get_level_values('room_id').nunique()}")
     combined['building_id'] = building_id
@@ -201,7 +223,7 @@ def get_local_copy(building_id:int):
 
     return local_path
 
-def remote_test():
+def resample_remote():
     task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Resample Test Remote Execution')
     task.set_packages(packages='requirements.txt')
     task.execute_remotely(queue_name="default")
@@ -213,7 +235,14 @@ def remote_test():
     results = Parallel(n_jobs=4)(delayed(safe_main)(building_id) for building_id in building_ids)
     final_df = pd.concat(results, ignore_index=True)
     Task.current_task().upload_artifact(name="resampled_data", artifact_object=final_df)
-
+    new_dataset = Dataset.create(
+        dataset_project='ForeSightNEXT/BaltBest/resampled',
+        dataset_name='ResampledData',
+        dataset_version='0.0.1'
+    )
+    new_dataset.add_files('resampled_data.csv')
+    new_dataset.upload()
+    new_dataset.finalize()
 def fetch_units(path,building_id:int):
     try:
         try:
@@ -268,7 +297,7 @@ if __name__ == "__main__":
     # building_ids = [4, 7, 10, 13, 14, 16, 17, 18, 20, 21, 23, 24, 26, 28, 38, 39, 45, 46, 47, 50, 52, 53, 57, 58, 66, 73, 74]
     # print(len(building_ids))
     # fetch_units_remote()
-    remote_test()
+    resample_remote()
     
 
     
