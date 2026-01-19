@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from clearml import Dataset, Task
+import os
 
 def fix_reset(hca_units: pd.DataFrame) -> pd.DataFrame:
     hca_units = hca_units.sort_values(
@@ -268,6 +269,7 @@ def main_seasons():
     resampled['ts'] = pd.to_datetime(resampled['ts'])
     rooms_metadata = pd.read_csv(f"{local_path}/rooms_metadata.csv")
     season_counts = seasons_qa(resampled, rooms_metadata)
+    os.makedirs('temp', exist_ok=True)
     out_path = 'temp/data_qa_season_report.csv'
     season_counts.to_csv(out_path, index=False)
     Task.current_task().upload_artifact('data_qa_season_report', artifact_object=season_counts)
