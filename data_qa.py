@@ -249,12 +249,12 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
         rows.append(row)
     season_counts = pd.DataFrame(rows)
     season_summary = season_counts.groupby(['room_id','unit_id','building_id']).agg({
-        'inside_temp_season':'sum',
-        'outside_temp_season':'sum',
-        'heater_side_hca_temp_season':'sum',
-        'room_side_hca_temp_season':'sum',
-        'hca_units_season':'sum',
-        'overlap_season':'sum'
+        'n_seasons_inside_temp_measured':'sum',
+        'n_seasons_outside_temp_measured':'sum',
+        'n_seasons_heater_side_hca_temp_measured':'sum',
+        'n_seasons_room_side_hca_temp_measured':'sum',
+        'n_seasons_heaters_used':'sum',
+        'n_seasons_complete':'sum'
     }).reset_index()
     return season_summary
     #at least 2 weeks of data should be present for each variable in each season
