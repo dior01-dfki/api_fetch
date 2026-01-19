@@ -259,14 +259,14 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
     #at least 2 weeks of data should be present for each variable in each season
 
 def main_seasons():
+    task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Data QA_v2 - Seasons')
+    task.set_packages(packages='requirements.txt')
+    task.execute_remotely(queue_name="default")
     dataset = Dataset.get(dataset_name='ResampledData', dataset_project='ForeSightNEXT/BaltBest/resampled', dataset_version="0.0.1")
     local_path = dataset.get_local_copy()
     resampled = pd.read_csv(f"{local_path}/resampled_data.csv",index_col = 0)
     resampled['ts'] = pd.to_datetime(resampled['ts'])
     rooms_metadata = pd.read_csv(f"{local_path}/rooms_metadata.csv")
-    task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Data QA_v2 - Seasons')
-    task.set_packages(packages='requirements.txt')
-    task.execute_remotely(queue_name="default")
     season_counts = seasons_qa(resampled, rooms_metadata)
     out_path = 'temp/data_qa_season_report.csv'
     season_counts.to_csv(out_path, index=False)
