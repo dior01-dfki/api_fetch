@@ -179,15 +179,99 @@ def main():
     new_dataset.upload()
     new_dataset.finalize()
 
-def test_dataset():
-    dataset = Dataset.create(
-        dataset_name='AcceptableRooms',
-        dataset_project='ForeSightNEXT/BaltBest/resampled',
-        dataset_version='0.0.1',
-    )
-    dataset.add_files(path='acceptable_rooms.csv')
-    dataset.upload()
-    dataset.finalize()
+# def test_dataset():
+#     dataset = Dataset.create(
+#         dataset_name='AcceptableRooms',
+#         dataset_project='ForeSightNEXT/BaltBest/resampled',
+#         dataset_version='0.0.1',
+#     )
+#     dataset.add_files(path='acceptable_rooms.csv')
+#     dataset.upload()
+#     dataset.finalize()
 
+
+
+def count_consec_vals(df,col,threshold=14*24):
+    not_nan = df[col].notna()
+    grp = not_nan.ne(not_nan.shift()).cumsum()
+    run_len = not_nan.groupby(grp).transform('sum')
+    if run_len.max() < threshold:
+        return 0
+    else:
+        return 1
+
+def non_zero_vals(df,col,threshold=14*24):
+    not_zero = df[col] != 0
+    grp = not_zero.ne(not_zero.shift()).cumsum()
+    run_len = not_zero.groupby(grp).transform('sum')
+    if run_len.max() < threshold:
+        return 0
+    else:
+        return 1
+def count_overlap_consec_vals(df,cols,target_col,threshold=14*24):
+    valid = (
+        df[list(cols)].notna().all(axis=1) &
+        (df[target_col] != 0)
+    )
+    grp = valid.ne(valid.shift()).cumsum()
+    run_len = valid.groupby(grp).transform('sum')
+    if run_len.max() < threshold:
+        return 0
+    else:
+        return 1 
+def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.DataFrame:
+    resampled_df['ts'] = pd.to_datetime(resampled_df['ts'])
+    resampled_df.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
+    rooms_metadata = rooms_metadata[['building_id','unit_id','room_id']]
+    resampled_df['year'] = resampled_df['ts'].dt.year
+    resampled_df = resampled_df.merge(rooms_metadata, on='unit_id', how='left')
+    rows = []
+    for (room_id,unit_id,building_id,year), group in resampled_df.groupby(['room_id','unit_id','building_id','year']):
+        inside_temp_season = count_consec_vals(group,'inside_temp')
+        outside_temp_season = count_consec_vals(group,'outside_temp')
+        heater_side_hca_temp_season = count_consec_vals(group,'heater_side_hca_temp')
+        room_side_hca_temp_season = count_consec_vals(group,'room_side_hca_temp')
+        hca_units_season = non_zero_vals(group,'hca_units')
+        overlap_season = count_overlap_consec_vals(group,cols=['inside_temp','outside_temp','heater_side_hca_temp','room_side_hca_temp','hca_units'],target_col='hca_units')
+        row = {
+            'room_id': room_id,
+            'unit_id': unit_id,
+            'building_id': building_id,
+            'year': year,
+            'inside_temp_season': inside_temp_season,
+            'outside_temp_season': outside_temp_season,
+            'heater_side_hca_temp_season': heater_side_hca_temp_season,
+            'room_side_hca_temp_season': room_side_hca_temp_season,
+            'hca_units_season': hca_units_season,
+            'overlap_season': overlap_season
+        }
+        rows.append(row)
+    season_counts = pd.DataFrame(rows)
+    season_summary = season_counts.groupby(['room_id','unit_id','building_id']).agg({
+        'inside_temp_season':'sum',
+        'outside_temp_season':'sum',
+        'heater_side_hca_temp_season':'sum',
+        'room_side_hca_temp_season':'sum',
+        'hca_units_season':'sum',
+        'overlap_season':'sum'
+    }).reset_index()
+    return season_summary
+    #at least 2 weeks of data should be present for each variable in each season
+
+def main_seasons():
+    dataset = Dataset.get(dataset_name='ResampledData', dataset_project='ForeSightNEXT/BaltBest/resampled', dataset_version="0.0.1")
+    local_path = dataset.get_local_copy()
+    resampled = pd.read_csv(f"{local_path}/resampled_data.csv",index_col = 0)
+    resampled['ts'] = pd.to_datetime(resampled['ts'])
+    rooms_metadata = pd.read_csv(f"{local_path}/rooms_metadata.csv")
+    task = Task.init(project_name='ForeSightNEXT/BaltBest', task_name='Data QA_v2 - Seasons')
+    task.set_packages(packages='requirements.txt')
+    task.execute_remotely(queue_name="default")
+    season_counts = seasons_qa(resampled, rooms_metadata)
+    out_path = 'temp/data_qa_season_report.csv'
+    season_counts.to_csv(out_path, index=False)
+    Task.current_task().upload_artifact('data_qa_season_report', artifact_object=season_counts)
+    Task.current_task().upload_artifact('data_qa_season_report_csv', artifact_object=out_path)
 if __name__ == "__main__":
-    test_dataset()
+    #test_dataset()
+    main_seasons()
