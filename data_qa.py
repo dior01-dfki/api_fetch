@@ -222,9 +222,9 @@ def count_overlap_consec_vals(df,cols,target_col,threshold=14*24):
 def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.DataFrame:
     resampled_df['ts'] = pd.to_datetime(resampled_df['ts'])
     resampled_df.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
-    rooms_metadata = rooms_metadata[['building_id','unit_id','room_id']]
+    rooms_metadata = rooms_metadata[['unit_id','room_id']]
     resampled_df['year'] = resampled_df['ts'].dt.year
-    resampled_df = resampled_df.merge(rooms_metadata, on='unit_id', how='left')
+    resampled_df = resampled_df.merge(rooms_metadata, on='room_id', how='left')
     rows = []
     for (room_id,unit_id,building_id,year), group in resampled_df.groupby(['room_id','unit_id','building_id','year']):
         inside_temp_season = count_consec_vals(group,'inside_temp')
