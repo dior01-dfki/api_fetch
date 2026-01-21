@@ -224,10 +224,13 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
     resampled_df['ts'] = pd.to_datetime(resampled_df['ts'])
     resampled_df.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
     rooms_metadata = rooms_metadata[['unit_id','room_id']]
-    resampled_df['year'] = resampled_df['ts'].dt.year
+
+    #This splits the year on Jan, the heating season is considered from Oct to Mar
+    resampled_df['heating_year'] = resampled_df['ts'].dt.year
+    resampled_df.loc[resampled_df['ts'].dt.month >= 10, 'heating_year'] += 1
     resampled_df = resampled_df.merge(rooms_metadata, on='room_id', how='left')
     rows = []
-    for (room_id,unit_id,building_id,year), group in resampled_df.groupby(['room_id','unit_id','building_id','year']):
+    for (room_id,unit_id,building_id,heating_year), group in resampled_df.groupby(['room_id','unit_id','building_id','heating_year']):
         inside_temp_season = count_consec_vals(group,'inside_temp')
         outside_temp_season = count_consec_vals(group,'outside_temp')
         heater_side_hca_temp_season = count_consec_vals(group,'heater_side_hca_temp')
@@ -238,7 +241,7 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
             'room_id': room_id,
             'unit_id': unit_id,
             'building_id': building_id,
-            'year': year,
+            'heating_year': heating_year,
             'inside_temp_season': inside_temp_season,
             'outside_temp_season': outside_temp_season,
             'heater_side_hca_temp_season': heater_side_hca_temp_season,
