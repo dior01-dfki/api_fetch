@@ -220,6 +220,41 @@ def count_overlap_consec_vals(df,cols,target_col,threshold=14*24):
         return 0
     else:
         return 1 
+
+def longest_overlap_block_bounds(
+    df,
+    cols,
+    target_col,
+    threshold=14*24
+):
+    valid = (
+        df[list(cols)].notna().all(axis=1) &
+        df[target_col].notna() &
+        (df[target_col] != 0)
+    )
+
+    grp = valid.ne(valid.shift()).cumsum()
+    df = df.assign(_grp=grp)
+
+    blocks = (
+        df[valid]
+        .groupby('_grp')
+        .agg(
+            start_ts=('ts', 'min'),
+            end_ts=('ts', 'max'),
+            length=('ts', 'count')
+        )
+    )
+
+    blocks = blocks[blocks['length'] >= threshold]
+    if blocks.empty:
+        return None, None, 0
+
+    # longest block
+    row = blocks.sort_values('length', ascending=False).iloc[0]
+    return row['start_ts'], row['end_ts'], row['length']
+
+
 def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.DataFrame:
     resampled_df['ts'] = pd.to_datetime(resampled_df['ts'])
     resampled_df.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
@@ -237,6 +272,13 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
         room_side_hca_temp_season = count_consec_vals(group,'room_side_hca_temp')
         hca_units_season = non_zero_vals(group,'hca_units')
         overlap_season = count_overlap_consec_vals(group,cols=['inside_temp','outside_temp','heater_side_hca_temp','room_side_hca_temp','hca_units'],target_col='hca_units')
+        start_ts, end_ts, overlap_len = longest_overlap_block_bounds(
+            group,
+            cols=['inside_temp','outside_temp',
+                'heater_side_hca_temp','room_side_hca_temp'],
+            target_col='hca_units'
+        )
+
         row = {
             'room_id': room_id,
             'unit_id': unit_id,
@@ -247,7 +289,10 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
             'heater_side_hca_temp_season': heater_side_hca_temp_season,
             'room_side_hca_temp_season': room_side_hca_temp_season,
             'hca_units_season': hca_units_season,
-            'overlap_season': overlap_season
+            'overlap_season': overlap_season,
+            'overlap_start_ts': start_ts,
+            'overlap_end_ts': end_ts,
+            'overlap_len': overlap_len
         }
         rows.append(row)
     season_counts = pd.DataFrame(rows)
@@ -257,7 +302,8 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
         'heater_side_hca_temp_season':'sum',
         'room_side_hca_temp_season':'sum',
         'hca_units_season':'sum',
-        'overlap_season':'sum'
+        'overlap_season':'sum',
+
     }).reset_index()
     season_summary.rename(columns={
         'inside_temp_season':'n_seasons_inside_temp_measured',
@@ -267,7 +313,7 @@ def seasons_qa(resampled_df:pd.DataFrame, rooms_metadata:pd.DataFrame) -> pd.Dat
         'hca_units_season':'n_seasons_heaters_used',
         'overlap_season':'n_seasons_complete'
     }, inplace=True)
-    return season_summary
+    return season_summary, season_counts
     #at least 2 weeks of data should be present for each variable in each season
 
 def main_seasons():
@@ -279,12 +325,20 @@ def main_seasons():
     resampled = pd.read_csv(f"{local_path}/resampled_data.csv",index_col = 0)
     resampled['ts'] = pd.to_datetime(resampled['ts'])
     rooms_metadata = pd.read_csv(f"{local_path}/rooms_metadata.csv")
-    season_counts = seasons_qa(resampled, rooms_metadata)
+    season_summary, season_counts = seasons_qa(resampled, rooms_metadata)
     os.makedirs('temp', exist_ok=True)
     out_path = 'temp/data_qa_season_report.csv'
     season_counts.to_csv(out_path, index=False)
-    Task.current_task().upload_artifact('data_qa_season_report', artifact_object=season_counts)
-    Task.current_task().upload_artifact('data_qa_season_report_csv', artifact_object=out_path)
+    out_path_summary = 'temp/data_qa_season_summary.csv'
+    season_summary.to_csv(out_path_summary, index=False)
+    Task.current_task().upload_artifact('data_qa_season_summary.csv', artifact_object=out_path_summary)
+    #Task.current_task().upload_artifact('data_qa_season_report', artifact_object=season_counts)
+    Task.current_task().upload_artifact('data_qa_season_report.csv', artifact_object=out_path)
+
+
+
+
+
 if __name__ == "__main__":
     #test_dataset()
     main_seasons()
